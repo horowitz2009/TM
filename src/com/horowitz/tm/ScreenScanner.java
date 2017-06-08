@@ -55,6 +55,7 @@ public class ScreenScanner {
   private boolean _optimized = false;
   private boolean _debugMode = false;
 
+  public Rectangle _fullArea = null;
   public Rectangle _scanArea = null;
   private Rectangle _ping2Area;
 
@@ -160,6 +161,7 @@ public class ScreenScanner {
     // int yy;
     //
     _scanArea = new Rectangle(_tl.x + 120, _tl.y + 85, getGameWidth() - 120 - 120, getGameHeight() - 85 - 85);
+    _fullArea = new Rectangle(_tl.x, _tl.y + 42, getGameWidth(), getGameHeight() - 42);
     _parkingPoint = new Pixel(_br.x + 2, _tl.x + getGameHeight() / 2);
     // _ping2Area = new Rectangle(_tl.x + 120, _tl.y + 19, getGameWidth() - 120
     // - 120, getGameHeight() - 85 - 19);

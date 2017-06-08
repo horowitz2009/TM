@@ -126,7 +126,7 @@ public class MainFrame extends JFrame {
           handlePopups(false);
           try {
             LOGGER.info("balls");
-            Pixel p = scanner.scanOneFast("ball.bmp", scanner._scanArea, false);
+            Pixel p = scanner.scanOneFast("ball.bmp", scanner._fullArea, false);
             if (p != null) {
               LOGGER.info("click... " + p);
               mouse.click(p.x + 8, p.y + 8);
@@ -184,6 +184,13 @@ public class MainFrame extends JFrame {
               Rectangle area = new Rectangle(p.x - 194, p.y + 129, 650, 34);
               // scanner.writeArea(area, "hmm.bmp");
               Pixel pq = scanner.scanOneFast("Quiz.bmp", area, false);
+              if (pq == null) {
+                for (int i = 0; i < 5; i++) {
+                  mouse.click(p.x - 214, p.y + 295);
+                  mouse.delay(500);
+                }
+              }
+              pq = scanner.scanOneFast("Quiz.bmp", area, false);
               if (pq != null) {
                 mouse.click(pq.x + 79, pq.y + 286);
                 LOGGER.info("Simulate quiz...");
@@ -209,6 +216,9 @@ public class MainFrame extends JFrame {
                   }
 
                 }
+              } else {
+                LOGGER.info("Uh oh! Can't find Quiz!");
+                handlePopups(false);
               }
             }
 
