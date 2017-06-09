@@ -230,16 +230,16 @@ public class MainFrame extends JFrame {
     ballTask.setProtocol(new AbstractGameProtocol() {
       @Override
       public void execute() throws RobotInterruptedException, GameErrorException {
+        LOGGER.info("BALLS...");
         try {
           boolean move = settings.getBoolean("balls.move", true);
           handlePopups(false);
           mouse.delay(100);
-          LOGGER.info("BALLS...");
           if (move) {
             // move approach
             Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2, scanner.getTopLeft().y
                 + scanner.getGameHeight() / 2);
-            mouse.mouseMove(m);
+            //mouse.mouseMove(m);
             final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
             screenSize.width += 100;
             screenSize.height += 100;
@@ -300,16 +300,14 @@ public class MainFrame extends JFrame {
             mouse.dragFast(m.x + xx, m.y - yy, m.x, m.y, false, false);
             mouse.delay(500);
             mouse.mouseMove(scanner.getParkingPoint());
-
-            LOGGER.info("done");
-            mouse.delay(10000);
-            LOGGER.info("done10s");
           } else {
-            LOGGER.info("balls");
-            scanner.scanManyFast("ball.bmp", scanner._fullArea, true);
-            scanner.scanManyFast("ball.bmp", scanner._fullArea, true);
+            scanner.scanOneFast("ball.bmp", scanner._fullArea, true);
+            scanner.scanOneFast("ball.bmp", scanner._fullArea, true);
           }
+          mouse.delay(500);
+          LOGGER.info("BALLS DONE");
         } catch (Exception e) {
+          LOGGER.info("BALLS ERR");
         }
 
       }
