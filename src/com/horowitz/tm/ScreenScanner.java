@@ -743,6 +743,21 @@ public class ScreenScanner {
     return scanMany(imageData, screen, click);
   }
 
+  public List<Pixel> scanManyFast(String filename, Rectangle area, boolean click)
+      throws RobotInterruptedException, IOException, AWTException {
+    
+    ImageData imageData = getImageData(filename);
+    if (imageData == null)
+      return new ArrayList<Pixel>(0);
+    
+    if (area == null) {
+      area = imageData.getDefaultArea();
+    }
+    BufferedImage screen = new Robot().createScreenCapture(area);
+
+    return scanMany(imageData, screen, click);
+  }
+  
   public List<Pixel> scanMany(ImageData imageData, BufferedImage screen, boolean click)
       throws RobotInterruptedException, IOException, AWTException {
     if (imageData == null)
