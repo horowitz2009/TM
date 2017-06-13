@@ -57,7 +57,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.5c";
+  private static String APP_TITLE = "TM v0.6";
 
   private MouseRobot mouse;
 
@@ -250,6 +250,8 @@ public class MainFrame extends JFrame {
     });
   }
 
+  private int ballsCnt = 0;
+
   private void ballTask() {
     ballTask = new Task("BALLS", 1);
     ballTask.setProtocol(new AbstractGameProtocol() {
@@ -257,6 +259,7 @@ public class MainFrame extends JFrame {
       public void execute() throws RobotInterruptedException, GameErrorException {
         try {
           boolean move = settings.getBoolean("balls.move", true);
+          Pixel p = null;
           handlePopups(false);
           mouse.delay(100);
           if (move) {
@@ -281,8 +284,7 @@ public class MainFrame extends JFrame {
             area.width -= 500;
             area.height -= 280;
             // scanner.writeArea(area, "area1.jpg");
-            scanner.scanOneFast("ball.bmp", area, true);
-            scanner.scanOneFast("ball.bmp", area, true);
+            clickBalls(area);
 
             // W
             LOGGER.info("drag W");
@@ -291,9 +293,7 @@ public class MainFrame extends JFrame {
             mouse.mouseMove(scanner.getParkingPoint());
             area.width = 570 + xx * 2;
             area.x = scanner.getBottomRight().x - area.width;
-            // scanner.writeArea(area, "area2.jpg");
-            scanner.scanOneFast("ball.bmp", area, true);
-            scanner.scanOneFast("ball.bmp", area, true);
+            clickBalls(area);
 
             // N
             LOGGER.info("drag N");
@@ -305,9 +305,7 @@ public class MainFrame extends JFrame {
             area.width = 570 + xx * 2;
             area.x = scanner.getBottomRight().x - area.width;
             area.y = scanner.getBottomRight().y - area.height;
-            // scanner.writeArea(area, "area3.jpg");
-            scanner.scanOneFast("ball.bmp", area, true);
-            scanner.scanOneFast("ball.bmp", area, true);
+            clickBalls(area);
 
             // E
             LOGGER.info("drag E");
@@ -316,25 +314,37 @@ public class MainFrame extends JFrame {
             mouse.mouseMove(scanner.getParkingPoint());
             area.width = scanner.getGameWidth() - 500;
             area.x = scanner.getTopLeft().x;
-            // scanner.writeArea(area, "area4.jpg");
-            scanner.scanOneFast("ball.bmp", area, true);
-            scanner.scanOneFast("ball.bmp", area, true);
+            clickBalls(area);
 
             LOGGER.info("drag C");
             mouse.dragFast(m.x + xx, m.y - yy, m.x, m.y, false, false);
             mouse.delay(500);
             mouse.mouseMove(scanner.getParkingPoint());
           } else {
-            scanner.scanOneFast("ball.bmp", scanner._fullArea, true);
-            scanner.scanOneFast("ball.bmp", scanner._fullArea, true);
+            clickBalls(scanner._fullArea);
           }
           mouse.delay(500);
-          LOGGER.info("sleep 10min");
-          sleep(10 * 60000);
+          int minutes = settings.getInt("balls.sleep", 20);
+          LOGGER.info("BALLS SO FAR: " + ballsCnt);
+          LOGGER.info("sleep " + minutes + " min");
+
+          sleep(minutes * 60000);
         } catch (Exception e) {
           LOGGER.info("BALLS ERR");
         }
 
+      }
+
+      private void clickBalls(Rectangle area) throws RobotInterruptedException, IOException, AWTException {
+        int limit = settings.getInt("balls.limit", 0);
+        if (limit > 0 && ballsCnt < limit || limit <= 0) {
+          Pixel p = scanner.scanOneFast("ball.bmp", area, true);
+          if (p != null)
+            ballsCnt++;
+          p = scanner.scanOneFast("ball.bmp", area, true);
+          if (p != null)
+            ballsCnt++;
+        }
       }
     });
   }
