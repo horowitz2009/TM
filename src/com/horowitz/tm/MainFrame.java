@@ -57,7 +57,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.6";
+  private static String APP_TITLE = "TM v0.7";
 
   private MouseRobot mouse;
 
@@ -366,6 +366,7 @@ public class MainFrame extends JFrame {
         try {
           // 1.
           mouse.delay(500);
+          String minigame = "Items";// TODO make it settings
 
           Pixel p = scanner.scanOneFast("centerCourt.bmp", scanner._scanArea, false);
           // scanner.scanOneFast("practiceCourt.bmp", scanner._scanArea, true);
@@ -377,20 +378,29 @@ public class MainFrame extends JFrame {
             mouse.delay(4000);
             p = scanner.scanOneFast("practiceArena.bmp", scanner._fullArea, false);
             if (p != null) {
-              LOGGER.info("entered Practice arena...");
+              LOGGER.info("Practice arena...");
               Rectangle area = new Rectangle(p.x - 194, p.y + 129, 650, 34);
               // scanner.writeArea(area, "hmm.bmp");
-              Pixel pq = scanner.scanOneFast("Quiz.bmp", area, false);
+              Pixel pq = scanner.scanOneFast(minigame + ".bmp", area, false);
               if (pq == null) {
-                for (int i = 0; i < 5; i++) {
+                for (int i = 0; i < 6; i++) {
                   mouse.click(p.x - 214, p.y + 295);
                   mouse.delay(500);
                 }
               }
-              pq = scanner.scanOneFast("Quiz.bmp", area, false);
+              pq = scanner.scanOneFast(minigame + ".bmp", area, false);
+              if (pq == null) {
+                for (int i = 0; i < 6; i++) {
+                  mouse.click(p.x + 476, p.y + 295);
+                  mouse.delay(1400);
+                  pq = scanner.scanOneFast(minigame + ".bmp", area, false);
+                  if (pq != null)
+                    break;
+                }
+              }
               if (pq != null) {
                 mouse.click(pq.x + 79, pq.y + 286);
-                LOGGER.info("quiz");
+                LOGGER.info(minigame);
                 mouse.delay(4000);
                 p = scanner.scanOneFast("practiceArena.bmp", scanner._scanArea, false);
                 if (p != null) {
@@ -404,7 +414,7 @@ public class MainFrame extends JFrame {
                   handlePopups(false);
                 }
               } else {
-                LOGGER.info("Uh oh! Can't find Quiz!");
+                LOGGER.info("Uh oh! Can't find " + minigame + "!");
                 // handlePopups(false);
                 refresh();
               }
