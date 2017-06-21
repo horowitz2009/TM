@@ -71,6 +71,8 @@ public class MainFrame extends JFrame {
   private Task matchTask;
   private Task premiumTask;
   private Task ballTask;
+  private Task pairsTask;
+  
   private TaskManager taskManager;
 
   public static void main(String[] args) {
@@ -428,6 +430,108 @@ public class MainFrame extends JFrame {
     });
   }
 
+  private void pairsTask() {
+    pairsTask = new Task("Pairs", 1);
+    pairsTask.setProtocol(new AbstractGameProtocol() {
+      
+      @Override
+      public void execute() throws RobotInterruptedException, GameErrorException {
+        // 1. click practiceCourt.bmp
+        // 2. wait 3000
+        // 3. check is open practiceArena.bmp
+        // 4. find Quiz
+        // 5. click simulate.bmp
+        // 6. wait 4000
+        // 7. if ok, do nothing, else reschedule the task for 3 minutes
+        
+        try {
+          // 1.
+          mouse.delay(500);
+          String minigame = "Pairs";// TODO make it settings
+          
+          Pixel p = scanner.scanOneFast("centerCourt.bmp", scanner._scanArea, false);
+          // scanner.scanOneFast("practiceCourt.bmp", scanner._scanArea, true);
+          // mouse.delay(4000);
+          // Pixel p = scanner.scanOneFast("practiceArena.bmp",
+          // scanner._fullArea, false);
+          if (p != null) {
+            mouse.click(p.x + 321, p.y - 61);
+            mouse.delay(4000);
+            p = scanner.scanOneFast("practiceArena.bmp", scanner._fullArea, false);
+            if (p != null) {
+              LOGGER.info("Practice arena...");
+              Rectangle area = new Rectangle(p.x - 194, p.y + 129, 650, 34);
+              // scanner.writeArea(area, "hmm.bmp");
+              Pixel pq = scanner.scanOneFast(minigame + ".bmp", area, false);
+              if (pq == null) {
+                for (int i = 0; i < 6; i++) {
+                  mouse.click(p.x - 214, p.y + 295);
+                  mouse.delay(500);
+                }
+              }
+              pq = scanner.scanOneFast(minigame + ".bmp", area, false);
+              if (pq == null) {
+                for (int i = 0; i < 6; i++) {
+                  mouse.click(p.x + 476, p.y + 295);
+                  mouse.delay(1400);
+                  pq = scanner.scanOneFast(minigame + ".bmp", area, false);
+                  if (pq != null)
+                    break;
+                }
+              }
+              if (pq != null) {
+                //minigame visible
+                Rectangle barea = new Rectangle(pq.x - 77, pq.y + 266, 204, 37);
+                boolean playIt = settings.getBoolean("minigame.play", false);
+                Pixel b = scanner.scanOneFast(playIt? "Play.bmp" : "Simulate.bmp", barea, false);
+                
+                if (b != null) {
+                  if (playIt) {
+                    mouse.click(b);
+                    LOGGER.info("Playing " + minigame);
+                    mouse.delay(4000);
+                    playPairs();
+                  } else {
+                    mouse.click(b);
+                    LOGGER.info(minigame);
+                    mouse.delay(4000);
+                    p = scanner.scanOneFast("practiceArena.bmp", scanner._scanArea, false);
+                  }
+                  
+                  if (p != null) {
+                    LOGGER.info("SUCCESS");
+                    mouse.click(p.x + 500, p.y + 12);
+                    mouse.delay(2000);
+                  } else {
+                    LOGGER.info("no energy");
+                    LOGGER.info("sleep 5min");
+                    sleep(5 * 60000);
+                    handlePopups(false);
+                  }
+                }
+                
+              } else {
+                LOGGER.info("Uh oh! Can't find " + minigame + "!");
+                // handlePopups(false);
+                refresh();
+              }
+            }
+          }
+        } catch (IOException | AWTException e) {
+          e.printStackTrace();
+        }
+        
+      }
+    });
+  }
+  
+  private void playPairs() {
+    //it's supposed to have the game started...
+    
+    
+    
+  }
+  
   private void setDefaultSettings() {
     settings.setProperty("popups", "false");
     settings.setProperty("gates", "false");
