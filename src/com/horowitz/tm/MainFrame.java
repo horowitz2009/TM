@@ -62,7 +62,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.10";
+  private static String APP_TITLE = "TM v0.11";
 
   private MouseRobot mouse;
 
@@ -73,6 +73,7 @@ public class MainFrame extends JFrame {
   private boolean stopAllThreads;
 
   private Task practiceTask;
+  private Task sponsorTask;
   private Task matchTask;
   private Task premiumTask;
   private Task ballTask;
@@ -129,9 +130,11 @@ public class MainFrame extends JFrame {
       matchTask();
       bankTask();
       premiumTask();
+      sponsorTask();
 
       taskManager = new TaskManager(mouse);
       taskManager.addTask(premiumTask);
+      taskManager.addTask(sponsorTask);
       taskManager.addTask(practiceTask);
       taskManager.addTask(matchTask);
       taskManager.addTask(bankTask);
@@ -262,6 +265,37 @@ public class MainFrame extends JFrame {
     });
   }
 
+  private void sponsorTask() {
+    sponsorTask = new Task("Sponsor", 1);
+    sponsorTask.setProtocol(new AbstractGameProtocol() {
+
+      @Override
+      public void execute() throws RobotInterruptedException, GameErrorException {
+
+        try {
+          Pixel p = scanner.scanOneFast("sponsor.bmp", scanner._scanArea, false);
+          if (p != null) {
+            mouse.click(p.x + 6, p.y + 6);
+            mouse.delay(3000);
+            p = scanner.scanOneFast("Rocky.bmp", scanner._scanArea, false);
+            if (p != null) {
+              LOGGER.info("sponsor opened");
+              mouse.click(p.x, p.y + 303);
+              mouse.delay(3000);
+              LOGGER.info("sleep 5min");
+              sleep(5 * 60000);
+              handlePopups(false);
+            }
+          }
+
+        } catch (IOException | AWTException e) {
+          e.printStackTrace();
+        }
+
+      }
+    });
+  }
+
   private int ballsCnt = 0;
 
   private void bankTask() {
@@ -319,8 +353,8 @@ public class MainFrame extends JFrame {
             mouse.delay(100);
             if (move) {
               // move approach
-              Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2, scanner.getTopLeft().y
-                  + scanner.getGameHeight() / 2);
+              Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2,
+                  scanner.getTopLeft().y + scanner.getGameHeight() / 2);
               // mouse.mouseMove(m);
               final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
               screenSize.width += 100;
@@ -648,8 +682,8 @@ public class MainFrame extends JFrame {
       for (int row = 1; row <= mrows; row++) {
         for (int col = 1; col <= mcols; col++) {
           Slot slot = new Slot(row, col, true);
-          Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gap) + 20, gameArea.y + (row - 1)
-              * (slotSize + gap) + 20, 40, 40);
+          Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gap) + 20,
+              gameArea.y + (row - 1) * (slotSize + gap) + 20, 40, 40);
           slot.area = slotArea;
           matrix.put(slot.coords, slot);
         }
