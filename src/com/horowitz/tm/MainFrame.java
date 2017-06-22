@@ -13,6 +13,8 @@ import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -54,12 +56,13 @@ import com.horowitz.commons.Settings;
 import com.horowitz.macros.AbstractGameProtocol;
 import com.horowitz.macros.Task;
 import com.horowitz.macros.TaskManager;
+import com.sun.org.glassfish.external.statistics.annotations.Reset;
 
 public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.8";
+  private static String APP_TITLE = "TM v0.10";
 
   private MouseRobot mouse;
 
@@ -73,8 +76,9 @@ public class MainFrame extends JFrame {
   private Task matchTask;
   private Task premiumTask;
   private Task ballTask;
+  private Task bankTask;
   private Task pairsTask;
-  
+
   private TaskManager taskManager;
 
   public static void main(String[] args) {
@@ -112,8 +116,8 @@ public class MainFrame extends JFrame {
     try {
 
       // LOADING DATA
-      settings = Settings.createSettings("settings.properties");
-      if (!settings.containsKey("todo")) {
+      settings = Settings.createSettings("tm.properties");
+      if (!settings.containsKey("tasks.balls")) {
         setDefaultSettings();
       }
 
@@ -123,12 +127,14 @@ public class MainFrame extends JFrame {
       ballTask();
       practiceTask3();
       matchTask();
+      bankTask();
       premiumTask();
 
       taskManager = new TaskManager(mouse);
       taskManager.addTask(premiumTask);
       taskManager.addTask(practiceTask);
       taskManager.addTask(matchTask);
+      taskManager.addTask(bankTask);
       taskManager.addTask(ballTask);
       stopAllThreads = false;
 
@@ -140,9 +146,9 @@ public class MainFrame extends JFrame {
 
     initLayout();
 
-    // reapplySettings();
-    //
-    // runSettingsListener();
+    reapplySettings();
+
+    runSettingsListener();
 
   }
 
@@ -186,16 +192,18 @@ public class MainFrame extends JFrame {
                 mouse.delay(2000);
               } else {
                 p = scanner.scanOneFast("Continue.bmp", scanner._scanArea, false);
+                int minutes = settings.getInt("tasks.matches.sleep", 21);
                 if (p != null) {
                   mouse.click(p);
                   mouse.delay(4000);
                   p = scanner.scanOneFast("centerCourtTitle.bmp", scanner._scanArea, false);
                   if (p != null) {
                     LOGGER.info("GOOD");
+                    bankTask.getProtocol().reset();
                   } else {
                     LOGGER.info("HMM");
-                    LOGGER.info("sleep 5min");
-                    sleep(5 * 60000);
+                    LOGGER.info("sleep " + minutes + " minutes");
+                    sleep(minutes * 60000);
 
                     mouse.click(scanner.getParkingPoint());
                     try {
@@ -210,8 +218,8 @@ public class MainFrame extends JFrame {
                     }
                   }
                 } else {
-                  LOGGER.info("sleep 5min");
-                  sleep(5 * 60000);
+                  LOGGER.info("sleep " + minutes + " minutes");
+                  sleep(minutes * 60000);
                 }
 
               }
@@ -256,87 +264,129 @@ public class MainFrame extends JFrame {
 
   private int ballsCnt = 0;
 
-  private void ballTask() {
-    ballTask = new Task("BALLS", 1);
-    ballTask.setProtocol(new AbstractGameProtocol() {
+  private void bankTask() {
+    bankTask = new Task("BANK", 1);
+    bankTask.setProtocol(new AbstractGameProtocol() {
+
+      @Override
+      public void reset() {
+        super.reset();
+        sleep(0);
+      }
+
       @Override
       public void execute() throws RobotInterruptedException, GameErrorException {
         try {
-          boolean move = settings.getBoolean("balls.move", true);
-          Pixel p = null;
           handlePopups(false);
-          mouse.delay(100);
-          if (move) {
-            // move approach
-            Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2,
-                scanner.getTopLeft().y + scanner.getGameHeight() / 2);
-            // mouse.mouseMove(m);
-            final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-            screenSize.width += 100;
-            screenSize.height += 100;
-            int xx = screenSize.width - scanner.getGameWidth();
-            int yy = screenSize.height - scanner.getGameHeight();
-            xx /= 2;
-            yy /= 2;
-
-            // SE
-            LOGGER.info("drag SE");
-            mouse.dragFast(m.x - xx, m.y - yy, m.x + xx, m.y + yy, false, false);
-            mouse.delay(200);
-            mouse.mouseMove(scanner.getParkingPoint());
-            Rectangle area = new Rectangle(scanner._fullArea);
-            area.width -= 500;
-            area.height -= 280;
-            // scanner.writeArea(area, "area1.jpg");
-            clickBalls(area);
-
-            // W
-            LOGGER.info("drag W");
-            mouse.dragFast(m.x + xx, m.y + yy, m.x - xx, m.y + yy, false, false);
-            mouse.delay(200);
-            mouse.mouseMove(scanner.getParkingPoint());
-            area.width = 570 + xx * 2;
-            area.x = scanner.getBottomRight().x - area.width;
-            clickBalls(area);
-
-            // N
-            LOGGER.info("drag N");
-            mouse.dragFast(m.x - xx, m.y + yy, m.x - xx, m.y - yy, false, false);
-            mouse.delay(200);
-            mouse.mouseMove(scanner.getParkingPoint());
-            area = new Rectangle(scanner._fullArea);
-            area.height = 280 + 70 + yy * 2;
-            area.width = 570 + xx * 2;
-            area.x = scanner.getBottomRight().x - area.width;
-            area.y = scanner.getBottomRight().y - area.height;
-            clickBalls(area);
-
-            // E
-            LOGGER.info("drag E");
-            mouse.dragFast(m.x - xx, m.y - yy, m.x + xx, m.y - yy, false, false);
-            mouse.delay(200);
-            mouse.mouseMove(scanner.getParkingPoint());
-            area.width = scanner.getGameWidth() - 500;
-            area.x = scanner.getTopLeft().x;
-            clickBalls(area);
-
-            LOGGER.info("drag C");
-            mouse.dragFast(m.x + xx, m.y - yy, m.x, m.y, false, false);
-            mouse.delay(500);
-            mouse.mouseMove(scanner.getParkingPoint());
-          } else {
-            clickBalls(scanner._fullArea);
+          mouse.click(scanner.getBottomRight().x - 84, scanner.getTopLeft().y + 68);
+          mouse.delay(1500);
+          Pixel p = scanner.scanOneFast("Finances.bmp", scanner._scanArea, false);
+          if (p != null) {
+            mouse.click(p.x - 194, p.y + 368);
+            mouse.delay(1500);
+            sleep(1 * 60000);// 1 min
           }
-          mouse.delay(500);
+        } catch (IOException e) {
+          e.printStackTrace();
+        } catch (AWTException e) {
+          e.printStackTrace();
+        }
+      }
+    });
+
+  }
+
+  private void ballTask() {
+    ballTask = new Task("BALLS", 1);
+    ballTask.setProtocol(new AbstractGameProtocol() {
+
+      @Override
+      public void reset() {
+        super.reset();
+        ballsCnt = 0;
+      }
+
+      @Override
+      public void execute() throws RobotInterruptedException, GameErrorException {
+        try {
+
+          int limit = settings.getInt("balls.limit", 0);
+          if (limit > 0 && ballsCnt < limit || limit <= 0) {
+
+            boolean move = settings.getBoolean("balls.move", true);
+            Pixel p = null;
+            handlePopups(false);
+            mouse.delay(100);
+            if (move) {
+              // move approach
+              Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2, scanner.getTopLeft().y
+                  + scanner.getGameHeight() / 2);
+              // mouse.mouseMove(m);
+              final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+              screenSize.width += 100;
+              screenSize.height += 100;
+              int xx = screenSize.width - scanner.getGameWidth();
+              int yy = screenSize.height - scanner.getGameHeight();
+              xx /= 2;
+              yy /= 2;
+
+              // SE
+              LOGGER.info("drag SE");
+              mouse.dragFast(m.x - xx, m.y - yy, m.x + xx, m.y + yy, false, false);
+              mouse.delay(200);
+              mouse.mouseMove(scanner.getParkingPoint());
+              Rectangle area = new Rectangle(scanner._fullArea);
+              area.width -= 500;
+              area.height -= 280;
+              // scanner.writeArea(area, "area1.jpg");
+              clickBalls(area);
+
+              // W
+              LOGGER.info("drag W");
+              mouse.dragFast(m.x + xx, m.y + yy, m.x - xx, m.y + yy, false, false);
+              mouse.delay(200);
+              mouse.mouseMove(scanner.getParkingPoint());
+              area.width = 570 + xx * 2;
+              area.x = scanner.getBottomRight().x - area.width;
+              clickBalls(area);
+
+              // N
+              LOGGER.info("drag N");
+              mouse.dragFast(m.x - xx, m.y + yy, m.x - xx, m.y - yy, false, false);
+              mouse.delay(200);
+              mouse.mouseMove(scanner.getParkingPoint());
+              area = new Rectangle(scanner._fullArea);
+              area.height = 280 + 70 + yy * 2;
+              area.width = 570 + xx * 2;
+              area.x = scanner.getBottomRight().x - area.width;
+              area.y = scanner.getBottomRight().y - area.height;
+              clickBalls(area);
+
+              // E
+              LOGGER.info("drag E");
+              mouse.dragFast(m.x - xx, m.y - yy, m.x + xx, m.y - yy, false, false);
+              mouse.delay(200);
+              mouse.mouseMove(scanner.getParkingPoint());
+              area.width = scanner.getGameWidth() - 500;
+              area.x = scanner.getTopLeft().x;
+              clickBalls(area);
+
+              LOGGER.info("drag C");
+              mouse.dragFast(m.x + xx, m.y - yy, m.x, m.y, false, false);
+              mouse.delay(500);
+              mouse.mouseMove(scanner.getParkingPoint());
+            } else {
+              clickBalls(scanner._fullArea);
+            }
+            mouse.delay(500);
+          }
           int minutes = settings.getInt("balls.sleep", 20);
           LOGGER.info("BALLS SO FAR: " + ballsCnt);
           LOGGER.info("sleep " + minutes + " min");
-
           sleep(minutes * 60000);
         } catch (Exception e) {
           LOGGER.info("BALLS ERR");
         }
-
       }
 
       private void clickBalls(Rectangle area) throws RobotInterruptedException, IOException, AWTException {
@@ -598,8 +648,8 @@ public class MainFrame extends JFrame {
       for (int row = 1; row <= mrows; row++) {
         for (int col = 1; col <= mcols; col++) {
           Slot slot = new Slot(row, col, true);
-          Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gap) + 20,
-              gameArea.y + (row - 1) * (slotSize + gap) + 20, 40, 40);
+          Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gap) + 20, gameArea.y + (row - 1)
+              * (slotSize + gap) + 20, 40, 40);
           slot.area = slotArea;
           matrix.put(slot.coords, slot);
         }
@@ -703,7 +753,7 @@ public class MainFrame extends JFrame {
   private void pairsTask() {
     pairsTask = new Task("Pairs", 1);
     pairsTask.setProtocol(new AbstractGameProtocol() {
-      
+
       @Override
       public void execute() throws RobotInterruptedException, GameErrorException {
         // 1. click practiceCourt.bmp
@@ -713,12 +763,12 @@ public class MainFrame extends JFrame {
         // 5. click simulate.bmp
         // 6. wait 4000
         // 7. if ok, do nothing, else reschedule the task for 3 minutes
-        
+
         try {
           // 1.
           mouse.delay(500);
           String minigame = "Pairs";// TODO make it settings
-          
+
           Pixel p = scanner.scanOneFast("centerCourt.bmp", scanner._scanArea, false);
           // scanner.scanOneFast("practiceCourt.bmp", scanner._scanArea, true);
           // mouse.delay(4000);
@@ -750,11 +800,11 @@ public class MainFrame extends JFrame {
                 }
               }
               if (pq != null) {
-                //minigame visible
+                // minigame visible
                 Rectangle barea = new Rectangle(pq.x - 77, pq.y + 266, 204, 37);
                 boolean playIt = settings.getBoolean("minigame.play", false);
-                Pixel b = scanner.scanOneFast(playIt? "Play.bmp" : "Simulate.bmp", barea, false);
-                
+                Pixel b = scanner.scanOneFast(playIt ? "Play.bmp" : "Simulate.bmp", barea, false);
+
                 if (b != null) {
                   if (playIt) {
                     mouse.click(b);
@@ -767,7 +817,7 @@ public class MainFrame extends JFrame {
                     mouse.delay(4000);
                     p = scanner.scanOneFast("practiceArena.bmp", scanner._scanArea, false);
                   }
-                  
+
                   if (p != null) {
                     LOGGER.info("SUCCESS");
                     mouse.click(p.x + 500, p.y + 12);
@@ -779,7 +829,7 @@ public class MainFrame extends JFrame {
                     handlePopups(false);
                   }
                 }
-                
+
               } else {
                 LOGGER.info("Uh oh! Can't find " + minigame + "!");
                 // handlePopups(false);
@@ -790,27 +840,22 @@ public class MainFrame extends JFrame {
         } catch (IOException | AWTException e) {
           e.printStackTrace();
         }
-        
+
       }
     });
   }
-  
+
   private void playPairs() {
-    //it's supposed to have the game started...
-    
-    
-    
+    // it's supposed to have the game started...
+
   }
-  
+
   private void setDefaultSettings() {
-    settings.setProperty("popups", "false");
-    settings.setProperty("gates", "false");
-    settings.setProperty("slow", "false");
-    settings.setProperty("ping", "false");
-    settings.setProperty("ping2", "false");
-    settings.setProperty("caravan", "false");
-    settings.setProperty("kitchen", "true");
-    settings.setProperty("foundry", "true");
+    settings.setProperty("tasks.balls", "true");
+    settings.setProperty("tasks.practice", "true");
+    settings.setProperty("tasks.bank", "true");
+    settings.setProperty("tasks.matches", "true");
+    settings.setProperty("tasks.matches.sleep", "21");
 
     settings.saveSettingsSorted();
   }
@@ -829,9 +874,11 @@ public class MainFrame extends JFrame {
 
     // TOOLBARS
     JToolBar mainToolbar1 = createToolbar1();
+    JToolBar mainToolbar2 = createToolbar2();
 
     JPanel toolbars = new JPanel(new GridLayout(0, 1));
     toolbars.add(mainToolbar1);
+    toolbars.add(mainToolbar2);
 
     Box north = Box.createVerticalBox();
     north.add(toolbars);
@@ -842,11 +889,10 @@ public class MainFrame extends JFrame {
 
   private JToggleButton _slowToggle;
 
-  private JToggleButton _caravanToggle;
-
-  private JToggleButton _kitchenToggle;
-
-  private JToggleButton _foundryToggle;
+  private JToggleButton _ballsToggle;
+  private JToggleButton _practiceToggle;
+  private JToggleButton _matchesToggle;
+  private JToggleButton _bankToggle;
 
   private CaptureDialog captureDialog;
 
@@ -898,6 +944,69 @@ public class MainFrame extends JFrame {
       }
     }
     return isRunning;
+  }
+
+  private JToolBar createToolbar2() {
+    JToolBar toolbar = new JToolBar();
+    toolbar.setFloatable(false);
+
+    // Balls
+    _ballsToggle = new JToggleButton("Balls");
+    toolbar.add(_ballsToggle);
+    _ballsToggle.addItemListener(new ItemListener() {
+      @Override
+      public void itemStateChanged(ItemEvent e) {
+        boolean b = e.getStateChange() == ItemEvent.SELECTED;
+        LOGGER.info("Balls: " + (b ? "on" : "off"));
+        settings.setProperty("tasks.balls", "" + b);
+        settings.saveSettingsSorted();
+
+      }
+    });
+
+    // Practice
+    _practiceToggle = new JToggleButton("Practice");
+    toolbar.add(_practiceToggle);
+    _practiceToggle.addItemListener(new ItemListener() {
+      @Override
+      public void itemStateChanged(ItemEvent e) {
+        boolean b = e.getStateChange() == ItemEvent.SELECTED;
+        LOGGER.info("Practice: " + (b ? "on" : "off"));
+        settings.setProperty("tasks.practice", "" + b);
+        settings.saveSettingsSorted();
+      }
+    });
+
+    // Matches
+    _matchesToggle = new JToggleButton("Matches");
+    toolbar.add(_matchesToggle);
+
+    _matchesToggle.addItemListener(new ItemListener() {
+      @Override
+      public void itemStateChanged(ItemEvent e) {
+        boolean b = e.getStateChange() == ItemEvent.SELECTED;
+        LOGGER.info("Matches: " + (b ? "on" : "off"));
+        settings.setProperty("tasks.matches", "" + b);
+        settings.saveSettingsSorted();
+
+      }
+    });
+
+    // Bank
+    _bankToggle = new JToggleButton("Bank");
+    toolbar.add(_bankToggle);
+
+    _bankToggle.addItemListener(new ItemListener() {
+      @Override
+      public void itemStateChanged(ItemEvent e) {
+        boolean b = e.getStateChange() == ItemEvent.SELECTED;
+        LOGGER.info("Bank: " + (b ? "on" : "off"));
+        settings.setProperty("tasks.bank", "" + b);
+        settings.saveSettingsSorted();
+
+      }
+    });
+    return toolbar;
   }
 
   @SuppressWarnings("serial")
@@ -1401,23 +1510,26 @@ public class MainFrame extends JFrame {
     // _ping2Toggle.setSelected(ping2);
     // }
     //
-    // boolean caravan =
-    // "true".equalsIgnoreCase(_settings.getProperty("caravan"));
-    // if (caravan != _caravanToggle.isSelected()) {
-    // _caravanToggle.setSelected(caravan);
-    // }
-    //
-    // boolean kitchen =
-    // "true".equalsIgnoreCase(_settings.getProperty("kitchen"));
-    // if (kitchen != _kitchenToggle.isSelected()) {
-    // _kitchenToggle.setSelected(kitchen);
-    // }
-    //
-    // boolean foundry =
-    // "true".equalsIgnoreCase(_settings.getProperty("foundry"));
-    // if (foundry != _foundryToggle.isSelected()) {
-    // _foundryToggle.setSelected(foundry);
-    // }
+    boolean balls = "true".equalsIgnoreCase(settings.getProperty("tasks.balls"));
+    if (balls != _ballsToggle.isSelected()) {
+      _ballsToggle.setSelected(balls);
+    }
+
+    boolean practice = "true".equalsIgnoreCase(settings.getProperty("tasks.practice"));
+    if (practice != _practiceToggle.isSelected()) {
+      _practiceToggle.setSelected(practice);
+    }
+
+    boolean matches = "true".equalsIgnoreCase(settings.getProperty("tasks.matches"));
+    if (matches != _matchesToggle.isSelected()) {
+      _matchesToggle.setSelected(matches);
+    }
+
+    boolean bank = "true".equalsIgnoreCase(settings.getProperty("tasks.bank"));
+    if (bank != _bankToggle.isSelected()) {
+      _bankToggle.setSelected(bank);
+    }
+
     //
     // boolean ar =
     // "true".equalsIgnoreCase(_settings.getProperty("autoRefresh"));
