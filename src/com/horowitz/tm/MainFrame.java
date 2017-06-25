@@ -61,7 +61,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.12";
+  private static String APP_TITLE = "TM v0.14";
 
   private MouseRobot mouse;
 
@@ -125,18 +125,20 @@ public class MainFrame extends JFrame {
       mouse = scanner.getMouse();
 
       ballTask();
-      practiceTask3();
+      practiceTaskSIM();
+      practiceTaskPAIRS();
       matchTask();
       bankTask();
       premiumTask();
       sponsorTask();
 
       taskManager = new TaskManager(mouse);
-      taskManager.addTask(premiumTask);
-      taskManager.addTask(sponsorTask);
       taskManager.addTask(practiceTask);
+      taskManager.addTask(pairsTask);
       taskManager.addTask(matchTask);
       taskManager.addTask(bankTask);
+      taskManager.addTask(premiumTask);
+      taskManager.addTask(sponsorTask);
       taskManager.addTask(ballTask);
       stopAllThreads = false;
 
@@ -181,12 +183,13 @@ public class MainFrame extends JFrame {
                 LOGGER.info("entered center court...");
                 // Rectangle area = new Rectangle(p.x - 194, p.y + 129, 650,
                 // 34);
-                boolean success = clickMatch(p);
+                int code = clickMatch(p);
+                boolean success = code == 1;
                 if (success) {
                   success = false;
-                  p = scanner.scanOneFast("Continue.bmp", scanner._scanArea, false);
+                  p = scanner.scanOneFast("Continue.bmp", scanner._scanArea, true);
                   if (p == null) {
-                    p = scanner.scanOneFast("grandPrize.bmp", scanner._scanArea, false);
+                    p = scanner.scanOneFast("grandPrize.bmp", scanner._scanArea, true);
                     if (p != null) {
                       handleAwards();
                     }
@@ -194,7 +197,7 @@ public class MainFrame extends JFrame {
                   if (p != null) {
                     success = true;
                     matches++;
-                    handlePopups(false);
+                    handlePopups();
                     mouse.delay(1000);
                   }
                 }
@@ -204,6 +207,8 @@ public class MainFrame extends JFrame {
                   clickBankDirectly();
                 } else {
                   int minutes = settings.getInt("tasks.matches.sleep", 20);
+                  if (code < 0)
+                    minutes = 0;
                   bankTask.getProtocol().reset();
                   LOGGER.info("sleep " + minutes + " minutes");
                   sleep(minutes * 60000);
@@ -221,17 +226,22 @@ public class MainFrame extends JFrame {
         }
       }
 
-      private boolean clickMatch(Pixel p) throws RobotInterruptedException, IOException, AWTException {
-        mouse.click(p.x + 424, p.y + 180);
+      private int clickMatch(Pixel p) throws RobotInterruptedException, IOException, AWTException {
         mouse.delay(3000);
-        Pixel pq = scanner.scanOneFast("playerComp.bmp", scanner._scanArea, false);
-        if (pq != null) {
-          mouse.click(pq.x + 198, pq.y + 257);
-          LOGGER.info("match");
-          mouse.delay(2000);
-          return true;
-        }
-        return false;
+        Pixel ph = scanner.scanOneFast("EasyOpponent.bmp", scanner._scanArea, false);
+        if (ph != null) {
+          mouse.click(ph.x + 319, ph.y - 41);
+          mouse.delay(3000);
+          Pixel pq = scanner.scanOneFast("playerComp.bmp", scanner._scanArea, false);
+          if (pq != null) {
+            mouse.click(pq.x + 198, pq.y + 257);
+            LOGGER.info("match");
+            mouse.delay(2000);
+            return 1;
+          }
+        } else
+          return -1;
+        return 0;
       }
     });
   }
@@ -253,7 +263,7 @@ public class MainFrame extends JFrame {
             mouse.delay(3000);
             LOGGER.info("sleep 10min");
             sleep(10 * 60000);
-            handlePopups(false);
+            handlePopups();
           }
 
         } catch (IOException | AWTException e) {
@@ -283,7 +293,7 @@ public class MainFrame extends JFrame {
               mouse.delay(3000);
               LOGGER.info("sleep 5min");
               sleep(5 * 60000);
-              handlePopups(false);
+              handlePopups();
             }
           }
 
@@ -311,7 +321,7 @@ public class MainFrame extends JFrame {
       public void execute() throws RobotInterruptedException, GameErrorException {
         if (_bankToggle.isSelected())
           try {
-            handlePopups(false);
+            handlePopups();
             clickBankDirectly();
             sleep(1 * 60000);// 1 min
           } catch (IOException e) {
@@ -344,12 +354,12 @@ public class MainFrame extends JFrame {
 
               boolean move = settings.getBoolean("balls.move", true);
               Pixel p = null;
-              handlePopups(false);
+              handlePopups();
               mouse.delay(100);
               if (move) {
                 // move approach
-                Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2, scanner.getTopLeft().y
-                    + scanner.getGameHeight() / 2);
+                Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2,
+                    scanner.getTopLeft().y + scanner.getGameHeight() / 2);
                 // mouse.mouseMove(m);
                 final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
                 screenSize.width += 100;
@@ -432,7 +442,7 @@ public class MainFrame extends JFrame {
     });
   }
 
-  private void practiceTask3() {
+  private void practiceTaskSIM() {
     practiceTask = new Task("PRACTICE", 1);
     practiceTask.setProtocol(new AbstractGameProtocol() {
 
@@ -488,7 +498,7 @@ public class MainFrame extends JFrame {
                     LOGGER.info("no energy");
                     LOGGER.info("sleep 5min");
                     sleep(5 * 60000);
-                    handlePopups(false);
+                    handlePopups();
                   }
                 } else {
                   LOGGER.info("Uh oh! Can't find " + minigame + "!");
@@ -505,84 +515,82 @@ public class MainFrame extends JFrame {
     });
   }
 
-  private void practiceTask2() {
-    practiceTask = new Task("PRACTICE2", 1);
-    practiceTask.setProtocol(new AbstractGameProtocol() {
+  private void practiceTaskPAIRS() {
+    pairsTask = new Task("PRACTICE PAIRS", 1);
+    pairsTask.setProtocol(new AbstractGameProtocol() {
 
       @Override
       public void execute() throws RobotInterruptedException, GameErrorException {
-        // 1. click practiceCourt.bmp
-        // 2. wait 3000
-        // 3. check is open practiceArena.bmp
-        // 4. find Quiz
-        // 5. click simulate.bmp
-        // 6. wait 4000
-        // 7. if ok, do nothing, else reschedule the task for 3 minutes
+        if (_pairsToggle.isSelected())
+          try {
+            // 1.
+            mouse.delay(500);
+            String minigame = settings.getProperty("minigame", "Pairs");
 
-        try {
-          // 1.
-          mouse.delay(500);
-          String minigame = settings.getProperty("minigame", "Pairs");
-
-          Pixel p = scanner.scanOneFast("centerCourt.bmp", scanner._scanArea, false);
-          // scanner.scanOneFast("practiceCourt.bmp", scanner._scanArea, true);
-          // mouse.delay(4000);
-          // Pixel p = scanner.scanOneFast("practiceArena.bmp",
-          // scanner._fullArea, false);
-          if (p != null) {
-            mouse.click(p.x + 321, p.y - 61);
-            mouse.delay(4000);
-            p = scanner.scanOneFast("practiceArena.bmp", scanner._fullArea, false);
+            Pixel p = scanner.scanOneFast("centerCourt.bmp", scanner._scanArea, false);
+            // scanner.scanOneFast("practiceCourt.bmp", scanner._scanArea,
+            // true);
+            // mouse.delay(4000);
+            // Pixel p = scanner.scanOneFast("practiceArena.bmp",
+            // scanner._fullArea, false);
             if (p != null) {
-              LOGGER.info("Practice arena...");
-              Rectangle area = new Rectangle(p.x - 194, p.y + 129, 650, 34);
-              // scanner.writeArea(area, "hmm.bmp");
-              Pixel pq = scanner.scanOneFast(minigame + ".bmp", area, false);
-              if (pq == null) {
-                for (int i = 0; i < 6; i++) {
-                  mouse.click(p.x - 214, p.y + 295);
-                  mouse.delay(500);
+              mouse.click(p.x + 321, p.y - 61);
+              mouse.delay(4000);
+              p = scanner.scanOneFast("practiceArena.bmp", scanner._fullArea, false);
+              if (p != null) {
+                LOGGER.info("Practice arena...");
+                Rectangle area = new Rectangle(p.x - 194, p.y + 129, 650, 34);
+                // scanner.writeArea(area, "hmm.bmp");
+                Pixel pq = scanner.scanOneFast(minigame + ".bmp", area, false);
+                if (pq == null) {
+                  for (int i = 0; i < 6; i++) {
+                    mouse.click(p.x - 214, p.y + 295);
+                    mouse.delay(500);
+                  }
                 }
-              }
-              pq = scanner.scanOneFast(minigame + ".bmp", area, false);
-              if (pq == null) {
-                for (int i = 0; i < 6; i++) {
-                  mouse.click(p.x + 476, p.y + 295);
-                  mouse.delay(1400);
-                  pq = scanner.scanOneFast(minigame + ".bmp", area, false);
-                  if (pq != null)
-                    break;
+                pq = scanner.scanOneFast(minigame + ".bmp", area, false);
+                if (pq == null) {
+                  for (int i = 0; i < 6; i++) {
+                    mouse.click(p.x + 476, p.y + 295);
+                    mouse.delay(1400);
+                    pq = scanner.scanOneFast(minigame + ".bmp", area, false);
+                    if (pq != null)
+                      break;
+                  }
                 }
-              }
-              if (pq != null) {
-                mouse.click(pq.x, pq.y + 285);
-                mouse.delay(4000);
-                doPairs();
+                if (pq != null) {
+                  mouse.click(pq.x, pq.y + 285);
+                  mouse.delay(4000);
+                  if (!doPairs()) {
+                    LOGGER.info("no energy");
+                    LOGGER.info("sleep 5min");
+                    sleep(5 * 60000);
+                    handlePopups();
+                  } else {
+                    mouse.delay(6000);
 
-                mouse.delay(4000);
-                // p = scanner.scanOneFast("practiceArena.bmp",
-                // scanner._scanArea, false);
-                // if (p != null) {
-                // LOGGER.info("SUCCESS");
-                // mouse.click(p.x + 500, p.y + 12);
-                // mouse.delay(2000);
-                // } else {
-                // LOGGER.info("no energy");
-                // LOGGER.info("sleep 5min");
-                // sleep(5 * 60000);
-                // handlePopups(false);
-                // }
-                handlePopups(false);
-              } else {
-                LOGGER.info("Uh oh! Can't find " + minigame + "!");
-                // handlePopups(false);
-                refresh();
+                    // AFTER GAME
+                    p = scanner.scanOneFast("ContinueBrown.bmp", scanner._scanArea, true);
+                    if (p == null) {
+                      p = scanner.scanOneFast("grandPrize.bmp", scanner._scanArea, true);
+                      if (p != null) {
+                        handleAwards();
+                      }
+                    }
+
+                    handlePopups();
+                    mouse.delay(1000);
+                  }
+                } else {
+                  LOGGER.info("Uh oh! Can't find " + minigame + "!");
+                  // handlePopups(false);
+                  refresh();
+                }
               }
             }
+          } catch (IOException | AWTException e) {
+            e.printStackTrace();
           }
-        } catch (IOException | AWTException e) {
-          e.printStackTrace();
-        }
 
       }
     });
@@ -644,17 +652,19 @@ public class MainFrame extends JFrame {
 
   }
 
-  protected void doPairs() throws RobotInterruptedException, IOException, AWTException {
+  protected boolean doPairs() throws RobotInterruptedException, IOException, AWTException {
     boolean started = false;
+    int turn = 0;
     Pixel p = null;
     do {
+      turn++;
       LOGGER.info("check is started...");
       p = scanner.scanOneFast("clockAnchor.bmp", scanner._scanArea, false);
       if (p != null)
         started = true;
       else
         mouse.delay(500);
-    } while (!started);
+    } while (!started && turn < 20);
     if (started) {
       // good
       int slotSize = 80;
@@ -671,8 +681,8 @@ public class MainFrame extends JFrame {
       for (int row = 1; row <= mrows; row++) {
         for (int col = 1; col <= mcols; col++) {
           Slot slot = new Slot(row, col, true);
-          Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gap) + 20, gameArea.y + (row - 1)
-              * (slotSize + gap) + 20, 40, 40);
+          Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gap) + 20,
+              gameArea.y + (row - 1) * (slotSize + gap) + 20, 40, 40);
           slot.area = slotArea;
           matrix.put(slot.coords, slot);
         }
@@ -760,6 +770,7 @@ public class MainFrame extends JFrame {
         }
       }
     }
+    return started;
 
   }
 
@@ -773,20 +784,15 @@ public class MainFrame extends JFrame {
     return pixel != null;
   }
 
+  /**
+   * @deprecated
+   */
   private void pairsTask() {
     pairsTask = new Task("Pairs", 1);
     pairsTask.setProtocol(new AbstractGameProtocol() {
 
       @Override
       public void execute() throws RobotInterruptedException, GameErrorException {
-        // 1. click practiceCourt.bmp
-        // 2. wait 3000
-        // 3. check is open practiceArena.bmp
-        // 4. find Quiz
-        // 5. click simulate.bmp
-        // 6. wait 4000
-        // 7. if ok, do nothing, else reschedule the task for 3 minutes
-
         try {
           // 1.
           mouse.delay(500);
@@ -849,7 +855,7 @@ public class MainFrame extends JFrame {
                     LOGGER.info("no energy");
                     LOGGER.info("sleep 5min");
                     sleep(5 * 60000);
-                    handlePopups(false);
+                    handlePopups();
                   }
                 }
 
@@ -876,6 +882,7 @@ public class MainFrame extends JFrame {
   private void setDefaultSettings() {
     settings.setProperty("tasks.balls", "true");
     settings.setProperty("tasks.practice", "true");
+    settings.setProperty("tasks.pairs", "false");
     settings.setProperty("tasks.bank", "true");
     settings.setProperty("tasks.matches", "true");
     settings.setProperty("tasks.matches.sleep", "21");
@@ -914,6 +921,7 @@ public class MainFrame extends JFrame {
 
   private JToggleButton _ballsToggle;
   private JToggleButton _practiceToggle;
+  private JToggleButton _pairsToggle;
   private JToggleButton _matchesToggle;
   private JToggleButton _bankToggle;
 
@@ -996,6 +1004,19 @@ public class MainFrame extends JFrame {
         boolean b = e.getStateChange() == ItemEvent.SELECTED;
         LOGGER.info("Practice: " + (b ? "on" : "off"));
         settings.setProperty("tasks.practice", "" + b);
+        settings.saveSettingsSorted();
+      }
+    });
+
+    // Practice Pairs
+    _pairsToggle = new JToggleButton("Pairs");
+    toolbar.add(_pairsToggle);
+    _pairsToggle.addItemListener(new ItemListener() {
+      @Override
+      public void itemStateChanged(ItemEvent e) {
+        boolean b = e.getStateChange() == ItemEvent.SELECTED;
+        LOGGER.info("Pairs: " + (b ? "on" : "off"));
+        settings.setProperty("tasks.pairs", "" + b);
         settings.saveSettingsSorted();
       }
     });
@@ -1356,7 +1377,7 @@ public class MainFrame extends JFrame {
       do {
         taskManager.executeAll();
         // ballTask.execute();
-        handlePopups(false);
+        handlePopups();
         // practiceTask.execute();
         // matchTask.execute();
         // handlePopups(false);
@@ -1382,7 +1403,7 @@ public class MainFrame extends JFrame {
     mouse.checkUserMovement();
 
     // // 1. SCAN
-    handlePopups(false);
+    handlePopups();
 
     mouse.mouseMove(scanner.getParkingPoint());
 
@@ -1435,11 +1456,11 @@ public class MainFrame extends JFrame {
       for (int i = 0; i < 17 && !done; i++) {
         LOGGER.info("after refresh recovery try " + (i + 1));
 
-        handlePopups(i > 10);
+        handlePopups();
         mouse.delay(200);
-        handlePopups(i > 10);
+        handlePopups();
         mouse.delay(200);
-        handlePopups(i > 10);
+        handlePopups();
         mouse.delay(200);
         // LOCATE THE GAME
         if (scanner.locateGameArea(false) && !scanner.isWide()) {
@@ -1487,14 +1508,28 @@ public class MainFrame extends JFrame {
 
   private long _fstart;
 
-  private void handlePopups(boolean wide) throws RobotInterruptedException {
+  private void handlePopups() throws RobotInterruptedException {
+    boolean found = false;
     try {
       LOGGER.info("Popups...");
       Pixel p = scanner.scanOneFast("x.bmp", scanner._scanArea, false);
       if (p != null) {
+        found = true;
         mouse.click(p.x + 16, p.y + 16);
         mouse.delay(200);
       }
+      found = found || scanner.scanOneFast("Continue.bmp", scanner._scanArea, true) != null;
+      found = found || scanner.scanOneFast("ContinueBrown.bmp", scanner._scanArea, true) != null;
+      if (!found) {
+        p = scanner.scanOneFast("grandPrize.bmp", scanner._scanArea, true);
+        if (p != null) {
+          handleAwards();
+          mouse.delay(1000);
+          p = scanner.scanOneFast("x.bmp", scanner._scanArea, true);
+          found = true;
+        }
+      }
+
     } catch (IOException e) {
       e.printStackTrace();
     } catch (AWTException e) {
@@ -1505,6 +1540,7 @@ public class MainFrame extends JFrame {
 
   private void handleAwards() {
     try {
+      mouse.delay(4000);
       Pixel p = scanner.scanOneFast("ballReward.bmp", scanner._scanArea, false);
       if (p != null) {
         mouse.click(p);
@@ -1513,7 +1549,6 @@ public class MainFrame extends JFrame {
         mouse.delay(1500);
         mouse.click(p.x + 218, p.y + 146); // pick up
         mouse.delay(1500);
-        handlePopups(false);
       }
     } catch (RobotInterruptedException e) {
       e.printStackTrace();
@@ -1562,6 +1597,11 @@ public class MainFrame extends JFrame {
     boolean practice = "true".equalsIgnoreCase(settings.getProperty("tasks.practice"));
     if (practice != _practiceToggle.isSelected()) {
       _practiceToggle.setSelected(practice);
+    }
+
+    boolean pairs = "true".equalsIgnoreCase(settings.getProperty("tasks.pairs"));
+    if (pairs != _pairsToggle.isSelected()) {
+      _pairsToggle.setSelected(pairs);
     }
 
     boolean matches = "true".equalsIgnoreCase(settings.getProperty("tasks.matches"));
@@ -1815,7 +1855,7 @@ public class MainFrame extends JFrame {
       mouse.click(p.x - 194, p.y + 368);
       mouse.delay(1500);
     }
-    handlePopups(false);
+    handlePopups();
   }
 
 }
