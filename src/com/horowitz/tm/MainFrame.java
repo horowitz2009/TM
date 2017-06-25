@@ -358,8 +358,8 @@ public class MainFrame extends JFrame {
               mouse.delay(100);
               if (move) {
                 // move approach
-                Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2,
-                    scanner.getTopLeft().y + scanner.getGameHeight() / 2);
+                Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2, scanner.getTopLeft().y
+                    + scanner.getGameHeight() / 2);
                 // mouse.mouseMove(m);
                 final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
                 screenSize.width += 100;
@@ -525,7 +525,7 @@ public class MainFrame extends JFrame {
           try {
             // 1.
             mouse.delay(500);
-            String minigame = settings.getProperty("minigame", "Pairs");
+            String minigame = "Pairs";
 
             Pixel p = scanner.scanOneFast("centerCourt.bmp", scanner._scanArea, false);
             // scanner.scanOneFast("practiceCourt.bmp", scanner._scanArea,
@@ -658,13 +658,15 @@ public class MainFrame extends JFrame {
     Pixel p = null;
     do {
       turn++;
-      LOGGER.info("check is started...");
-      p = scanner.scanOneFast("clockAnchor.bmp", scanner._scanArea, false);
-      if (p != null)
+      p = scanner.scanOneFast("clockAnchor.bmp", scanner._fullArea, false);
+      LOGGER.info("check is started..." + p);
+      if (p != null) {
         started = true;
-      else
+        break;
+      } else
         mouse.delay(500);
     } while (!started && turn < 20);
+
     if (started) {
       // good
       int slotSize = 80;
@@ -681,8 +683,8 @@ public class MainFrame extends JFrame {
       for (int row = 1; row <= mrows; row++) {
         for (int col = 1; col <= mcols; col++) {
           Slot slot = new Slot(row, col, true);
-          Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gap) + 20,
-              gameArea.y + (row - 1) * (slotSize + gap) + 20, 40, 40);
+          Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gap) + 20, gameArea.y + (row - 1)
+              * (slotSize + gap) + 20, 40, 40);
           slot.area = slotArea;
           matrix.put(slot.coords, slot);
         }
@@ -749,9 +751,9 @@ public class MainFrame extends JFrame {
 
               Coords c1 = new Coords(row1, col1);
               Coords c2 = new Coords(row2, col2);
-              System.err.println(c1 + " - " + c2);
+              //System.err.println(c1 + " - " + c2);
               if (c1.equals(c2)) {
-                System.err.println("SKIP");
+                //System.err.println("SKIP");
               } else {
                 LOGGER.fine("CLICK PAIRS: " + c1 + " and " + c2);
                 Slot slot1 = matrix.get(c1);
