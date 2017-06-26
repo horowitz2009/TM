@@ -573,14 +573,15 @@ public class MainFrame extends JFrame {
                     p = scanner.scanOneFast("ContinueBrown.bmp", scanner._scanArea, true);
                     if (p == null) {
                       int xx = (scanner.getTopLeft().x + scanner.getGameWidth() / 2);
-                      mouse.click(xx-124, pq.y + 285 - 18);
-                      mouse.click(xx-62, pq.y + 285 - 18);
-                      mouse.click(xx-0, pq.y + 285 - 18);
                       
-                      p = scanner.scanOneFast("grandPrize.bmp", scanner._scanArea, true);
+                      p = scanner.scanOneFast("grandPrize2.bmp", scanner._scanArea, true);
                       if (p != null) {
                         handleAwards();
                       } else {
+                        mouse.click(xx-124, pq.y + 285 - 18);
+                        mouse.click(xx-62, pq.y + 285 - 18);
+                        mouse.click(xx-0, pq.y + 285 - 18);
+                        mouse.delay(3000);
                         refresh();
                       }
                     }
@@ -1553,11 +1554,11 @@ public class MainFrame extends JFrame {
       Pixel p = scanner.scanOneFast("ballReward.bmp", scanner._scanArea, false);
       if (p != null) {
         mouse.click(p);
-        mouse.delay(500);
+        mouse.delay(3500);
         mouse.click(p.x + 218, p.y);
-        mouse.delay(1500);
+        mouse.delay(3500);
         mouse.click(p.x + 218, p.y + 146); // pick up
-        mouse.delay(1500);
+        mouse.delay(3500);
       }
     } catch (RobotInterruptedException e) {
       e.printStackTrace();
