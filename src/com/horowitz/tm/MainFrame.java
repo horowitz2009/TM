@@ -138,7 +138,7 @@ public class MainFrame extends JFrame {
       taskManager.addTask(matchTask);
       taskManager.addTask(bankTask);
       taskManager.addTask(premiumTask);
-      taskManager.addTask(sponsorTask);
+      //taskManager.addTask(sponsorTask);
       taskManager.addTask(ballTask);
       stopAllThreads = false;
 
@@ -454,16 +454,16 @@ public class MainFrame extends JFrame {
             mouse.delay(500);
             String minigame = settings.getProperty("minigame", "Items");
 
-            Pixel p = scanner.scanOneFast("centerCourt.bmp", scanner._scanArea, false);
-            // scanner.scanOneFast("practiceCourt.bmp", scanner._scanArea,
-            // true);
-            // mouse.delay(4000);
-            // Pixel p = scanner.scanOneFast("practiceArena.bmp",
-            // scanner._fullArea, false);
-            if (p != null) {
-              mouse.click(p.x + 321, p.y - 61);
-              mouse.delay(4000);
-              p = scanner.scanOneFast("practiceArena.bmp", scanner._fullArea, false);
+            mouse.click((scanner.getTopLeft().x + scanner.getGameWidth() / 2) - 130, scanner.getTopLeft().y + 63);
+            mouse.delay(3000);
+
+            // Pixel p = scanner.scanOneFast("centerCourt.bmp",
+            // scanner._scanArea, false);
+
+            // if (p != null) {
+            {// mouse.click(p.x + 321, p.y - 61);
+             // mouse.delay(4000);
+              Pixel p = scanner.scanOneFast("practiceArena.bmp", scanner._fullArea, false);
               if (p != null) {
                 LOGGER.info("Practice arena...");
                 Rectangle area = new Rectangle(p.x - 194, p.y + 129, 650, 34);
@@ -527,16 +527,16 @@ public class MainFrame extends JFrame {
             mouse.delay(500);
             String minigame = "Pairs";
 
-            Pixel p = scanner.scanOneFast("centerCourt.bmp", scanner._scanArea, false);
-            // scanner.scanOneFast("practiceCourt.bmp", scanner._scanArea,
-            // true);
-            // mouse.delay(4000);
-            // Pixel p = scanner.scanOneFast("practiceArena.bmp",
-            // scanner._fullArea, false);
-            if (p != null) {
-              mouse.click(p.x + 321, p.y - 61);
-              mouse.delay(4000);
-              p = scanner.scanOneFast("practiceArena.bmp", scanner._fullArea, false);
+            mouse.click((scanner.getTopLeft().x + scanner.getGameWidth() / 2) - 130, scanner.getTopLeft().y + 63);
+            mouse.delay(3000);
+
+            // Pixel p = scanner.scanOneFast("centerCourt.bmp",
+            // scanner._scanArea, false);
+
+            // if (p != null) {
+            {// mouse.click(p.x + 321, p.y - 61);
+             // mouse.delay(4000);
+              Pixel p = scanner.scanOneFast("practiceArena.bmp", scanner._fullArea, false);
               if (p != null) {
                 LOGGER.info("Practice arena...");
                 Rectangle area = new Rectangle(p.x - 194, p.y + 129, 650, 34);
@@ -572,9 +572,16 @@ public class MainFrame extends JFrame {
                     // AFTER GAME
                     p = scanner.scanOneFast("ContinueBrown.bmp", scanner._scanArea, true);
                     if (p == null) {
+                      int xx = (scanner.getTopLeft().x + scanner.getGameWidth() / 2);
+                      mouse.click(xx-124, pq.y + 285 - 18);
+                      mouse.click(xx-62, pq.y + 285 - 18);
+                      mouse.click(xx-0, pq.y + 285 - 18);
+                      
                       p = scanner.scanOneFast("grandPrize.bmp", scanner._scanArea, true);
                       if (p != null) {
                         handleAwards();
+                      } else {
+                        refresh();
                       }
                     }
 
@@ -751,9 +758,9 @@ public class MainFrame extends JFrame {
 
               Coords c1 = new Coords(row1, col1);
               Coords c2 = new Coords(row2, col2);
-              //System.err.println(c1 + " - " + c2);
+              // System.err.println(c1 + " - " + c2);
               if (c1.equals(c2)) {
-                //System.err.println("SKIP");
+                // System.err.println("SKIP");
               } else {
                 LOGGER.fine("CLICK PAIRS: " + c1 + " and " + c2);
                 Slot slot1 = matrix.get(c1);
