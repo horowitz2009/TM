@@ -517,91 +517,218 @@ public class MainFrame extends JFrame {
 
   private void practiceTaskPAIRS() {
     pairsTask = new Task("PRACTICE PAIRS", 1);
-    pairsTask.setProtocol(new AbstractGameProtocol() {
+    pairsTask.setProtocol(new PairsProtocol());
+  }
 
-      @Override
-      public void execute() throws RobotInterruptedException, GameErrorException {
-        if (_pairsToggle.isSelected())
-          try {
-            // 1.
-            mouse.delay(500);
-            String minigame = "Pairs";
+  private final class PairsProtocol extends AbstractGameProtocol {
+    
+    private boolean done = false;
+    private long time = 0l;
+    
+    @Override
+    public void execute() throws RobotInterruptedException, GameErrorException {
+      if (_pairsToggle.isSelected())
+        try {
+          // 1.
+          mouse.delay(500);
+          String minigame = "Pairs";
 
-            mouse.click((scanner.getTopLeft().x + scanner.getGameWidth() / 2) - 130, scanner.getTopLeft().y + 63);
-            mouse.delay(3000);
+          mouse.click((scanner.getTopLeft().x + scanner.getGameWidth() / 2) - 130, scanner.getTopLeft().y + 63);
+          mouse.delay(3000);
 
-            // Pixel p = scanner.scanOneFast("centerCourt.bmp",
-            // scanner._scanArea, false);
+          // Pixel p = scanner.scanOneFast("centerCourt.bmp",
+          // scanner._scanArea, false);
 
-            // if (p != null) {
-            {// mouse.click(p.x + 321, p.y - 61);
-             // mouse.delay(4000);
-              Pixel p = scanner.scanOneFast("practiceArena.bmp", scanner._fullArea, false);
-              if (p != null) {
-                LOGGER.info("Practice arena...");
-                Rectangle area = new Rectangle(p.x - 194, p.y + 129, 650, 34);
-                // scanner.writeArea(area, "hmm.bmp");
-                Pixel pq = scanner.scanOneFast(minigame + ".bmp", area, false);
-                if (pq == null) {
-                  for (int i = 0; i < 6; i++) {
-                    mouse.click(p.x - 214, p.y + 295);
-                    mouse.delay(500);
-                  }
+          // if (p != null) {
+          {// mouse.click(p.x + 321, p.y - 61);
+           // mouse.delay(4000);
+            Pixel p = scanner.scanOneFast("practiceArena.bmp", scanner._fullArea, false);
+            if (p != null) {
+              LOGGER.info("Practice arena...");
+              Rectangle area = new Rectangle(p.x - 194, p.y + 129, 650, 34);
+              // scanner.writeArea(area, "hmm.bmp");
+              Pixel pq = scanner.scanOneFast(minigame + ".bmp", area, false);
+              if (pq == null) {
+                for (int i = 0; i < 6; i++) {
+                  mouse.click(p.x - 214, p.y + 295);
+                  mouse.delay(500);
                 }
-                pq = scanner.scanOneFast(minigame + ".bmp", area, false);
-                if (pq == null) {
-                  for (int i = 0; i < 6; i++) {
-                    mouse.click(p.x + 476, p.y + 295);
-                    mouse.delay(1400);
-                    pq = scanner.scanOneFast(minigame + ".bmp", area, false);
-                    if (pq != null)
-                      break;
-                  }
+              }
+              pq = scanner.scanOneFast(minigame + ".bmp", area, false);
+              if (pq == null) {
+                for (int i = 0; i < 6; i++) {
+                  mouse.click(p.x + 476, p.y + 295);
+                  mouse.delay(1400);
+                  pq = scanner.scanOneFast(minigame + ".bmp", area, false);
+                  if (pq != null)
+                    break;
                 }
-                if (pq != null) {
-                  mouse.click(pq.x, pq.y + 285);
-                  mouse.delay(4000);
-                  if (!doPairs()) {
-                    LOGGER.info("no energy");
-                    LOGGER.info("sleep 5min");
-                    sleep(5 * 60000);
-                    handlePopups();
-                  } else {
-                    mouse.delay(6000);
-
-                    // AFTER GAME
-                    p = scanner.scanOneFast("ContinueBrown.bmp", scanner._scanArea, true);
-                    if (p == null) {
-                      int xx = (scanner.getTopLeft().x + scanner.getGameWidth() / 2);
-                      
-                      p = scanner.scanOneFast("grandPrize2.bmp", scanner._scanArea, true);
-                      if (p != null) {
-                        handleAwards();
-                      } else {
-                        mouse.click(xx-124, pq.y + 285 - 18);
-                        mouse.click(xx-62, pq.y + 285 - 18);
-                        mouse.click(xx-0, pq.y + 285 - 18);
-                        mouse.delay(3000);
-                        refresh();
-                      }
-                    }
-
-                    handlePopups();
-                    mouse.delay(1000);
-                  }
+              }
+              if (pq != null) {
+                mouse.click(pq.x, pq.y + 285);
+                mouse.delay(4000);
+                if (!doPairs()) {
+                  LOGGER.info("no energy");
+                  LOGGER.info("sleep 5min");
+                  sleep(5 * 60000);
+                  handlePopups();
                 } else {
-                  LOGGER.info("Uh oh! Can't find " + minigame + "!");
-                  // handlePopups(false);
-                  refresh();
+                  mouse.delay(6000);
+
+                  // AFTER GAME
+                  p = scanner.scanOneFast("ContinueBrown.bmp", scanner._scanArea, true);
+                  if (p == null) {
+                    int xx = (scanner.getTopLeft().x + scanner.getGameWidth() / 2);
+                    
+                    p = scanner.scanOneFast("grandPrize2.bmp", scanner._scanArea, true);
+                    if (p != null) {
+                      handleAwards();
+                    } else {
+                      mouse.click(xx-124, pq.y + 285 - 18);
+                      mouse.click(xx-62, pq.y + 285 - 18);
+                      mouse.click(xx-0, pq.y + 285 - 18);
+                      mouse.delay(3000);
+                      refresh();
+                    }
+                  }
+
+                  handlePopups();
+                  mouse.delay(1000);
+                }
+              } else {
+                LOGGER.info("Uh oh! Can't find " + minigame + "!");
+                // handlePopups(false);
+                refresh();
+              }
+            }
+          }
+        } catch (IOException | AWTException e) {
+          e.printStackTrace();
+        }
+
+    }
+  
+  
+    public boolean doPairs() throws RobotInterruptedException, IOException, AWTException {
+      boolean started = false;
+      int turn = 0;
+      Pixel p = null;
+      do {
+        turn++;
+        p = scanner.scanOneFast("clockAnchor.bmp", scanner._fullArea, false);
+        LOGGER.info("check is started..." + p);
+        if (p != null) {
+          started = true;
+          break;
+        } else
+          mouse.delay(500);
+      } while (!started && turn < 20);
+
+      if (started) {
+        // good
+        int slotSize = 80;
+        int gap = 7;
+        int mcols = 8;
+        int mrows = 4;
+        int mwidth = mcols * (slotSize + gap) - gap;
+        int mheight = mrows * (slotSize + gap) - gap;
+        Rectangle gameArea = new Rectangle(p.x + 308 - 80 - 7 - 80 - 7, p.y + 143, mwidth, mheight);
+
+        Map<Coords, Slot> matrix = new HashMap<Coords, Slot>();
+        for (int row = 1; row <= mrows; row++) {
+          for (int col = 1; col <= mcols; col++) {
+            Slot slot = new Slot(row, col, true);
+            Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gap) + 20, gameArea.y + (row - 1)
+                * (slotSize + gap) + 20, 40, 40);
+            slot.area = slotArea;
+            matrix.put(slot.coords, slot);
+          }
+        }
+
+        for (int row = 1; row <= mrows; row++) {
+          for (int col = 1; col <= mcols; col++) {
+            Slot slot = matrix.get(new Coords(row, col));
+
+            slot.image = scanSlot(slot.area);
+
+            if (!sameImage(scanner.getImageData("back.bmp").getImage(), slot.image)) {
+              slot.image = null;
+              slot.active = false;
+            }
+          }
+        }
+        
+        boolean first = true;
+        Coords prev = null;
+        for (int row = 1; row <= mrows; row++) {
+          for (int col = 1; col <= mcols; col++) {
+            Coords coords = new Coords(row, col);
+            Slot slot = matrix.get(coords);
+            if (slot.active) {
+              mouse.click(slot.area.x, slot.area.y);
+              if (first) {
+                prev = coords;
+                mouse.delay(150);
+              } else {
+                mouse.delay(500);
+                slot.image = scanSlot(slot.area);
+                Slot prevSlot = matrix.get(prev);
+                prevSlot.image = scanSlot(prevSlot.area);
+                if (prev != null && sameImage(prevSlot.image, slot.image)) {
+                  // we have match, so remove both
+                  prevSlot.image = null;
+                  slot.image = null;
+                  //TODO UH OH! Time is ticking now
+                }
+              }
+              // scanner.writeImage(slot.image, "slot_flipped" +
+              // slot.coords.toString() + ".jpg");
+
+              first = !first;
+              // mouse.delay(150);
+            }
+          }
+        }
+
+        // now find matches
+        clickMatches(mcols, mrows, matrix);
+      }
+      return started;
+
+    }
+
+    private void clickMatches(int mcols, int mrows, Map<Coords, Slot> matrix) throws RobotInterruptedException {
+      for (int row1 = 1; row1 <= mrows; row1++) {
+        for (int col1 = 1; col1 <= mcols; col1++) {
+
+          for (int row2 = 1; row2 <= mrows; row2++) {
+            for (int col2 = 1; col2 <= mcols; col2++) {
+
+              Coords c1 = new Coords(row1, col1);
+              Coords c2 = new Coords(row2, col2);
+              // System.err.println(c1 + " - " + c2);
+              if (c1.equals(c2)) {
+                // System.err.println("SKIP");
+              } else {
+                LOGGER.fine("CLICK PAIRS: " + c1 + " and " + c2);
+                Slot slot1 = matrix.get(c1);
+                Slot slot2 = matrix.get(c2);
+                if (slot1.image != null && slot2.image != null && sameImage(slot1.image, slot2.image)) {
+                  mouse.click(slot1.area.x, slot1.area.y);
+                  mouse.delay(200);
+                  mouse.click(slot2.area.x, slot2.area.y);
+                  mouse.delay(500);
+                  slot1.image = null;
+                  slot2.image = null;
                 }
               }
             }
-          } catch (IOException | AWTException e) {
-            e.printStackTrace();
           }
-
+        }
       }
-    });
+    }
+
+  
   }
 
   private static class Slot {
@@ -660,129 +787,6 @@ public class MainFrame extends JFrame {
 
   }
 
-  protected boolean doPairs() throws RobotInterruptedException, IOException, AWTException {
-    boolean started = false;
-    int turn = 0;
-    Pixel p = null;
-    do {
-      turn++;
-      p = scanner.scanOneFast("clockAnchor.bmp", scanner._fullArea, false);
-      LOGGER.info("check is started..." + p);
-      if (p != null) {
-        started = true;
-        break;
-      } else
-        mouse.delay(500);
-    } while (!started && turn < 20);
-
-    if (started) {
-      // good
-      int slotSize = 80;
-      int gap = 7;
-      int mcols = 8;
-      int mrows = 4;
-      int mwidth = mcols * (slotSize + gap) - gap;
-      int mheight = mrows * (slotSize + gap) - gap;
-      Rectangle gameArea = new Rectangle(p.x + 308 - 80 - 7 - 80 - 7, p.y + 143, mwidth, mheight);// y
-      // was
-      // 230
-
-      Map<Coords, Slot> matrix = new HashMap<Coords, Slot>();
-      for (int row = 1; row <= mrows; row++) {
-        for (int col = 1; col <= mcols; col++) {
-          Slot slot = new Slot(row, col, true);
-          Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gap) + 20, gameArea.y + (row - 1)
-              * (slotSize + gap) + 20, 40, 40);
-          slot.area = slotArea;
-          matrix.put(slot.coords, slot);
-        }
-      }
-
-      // // exclude these
-      // matrix.get(new Coords(1, 1)).active = false;
-      // matrix.get(new Coords(1, 4)).active = false;
-      // matrix.get(new Coords(4, 1)).active = false;
-      // matrix.get(new Coords(4, 4)).active = false;
-
-      for (int row = 1; row <= mrows; row++) {
-        for (int col = 1; col <= mcols; col++) {
-          Slot slot = matrix.get(new Coords(row, col));
-
-          slot.image = scanSlot(slot.area);
-
-          if (!sameImage(scanner.getImageData("back.bmp").getImage(), slot.image)) {
-            slot.image = null;
-            slot.active = false;
-          }
-          // if (slot.image != null)
-          // scanner.writeImage(slot.image, "slot" + slot.coords.toString() +
-          // ".jpg");
-        }
-      }
-      boolean first = true;
-      Coords prev = null;
-      for (int row = 1; row <= mrows; row++) {
-        for (int col = 1; col <= mcols; col++) {
-          Coords coords = new Coords(row, col);
-          Slot slot = matrix.get(coords);
-          if (slot.active) {
-            mouse.click(slot.area.x, slot.area.y);
-            if (first) {
-              prev = coords;
-              mouse.delay(150);
-            } else {
-              mouse.delay(500);
-              slot.image = scanSlot(slot.area);
-              Slot prevSlot = matrix.get(prev);
-              prevSlot.image = scanSlot(prevSlot.area);
-              if (prev != null && sameImage(prevSlot.image, slot.image)) {
-                // we have match, so remove both
-                prevSlot.image = null;
-                slot.image = null;
-              }
-            }
-            // scanner.writeImage(slot.image, "slot_flipped" +
-            // slot.coords.toString() + ".jpg");
-
-            first = !first;
-            // mouse.delay(150);
-          }
-        }
-      }
-
-      // now find matches
-      for (int row1 = 1; row1 <= mrows; row1++) {
-        for (int col1 = 1; col1 <= mcols; col1++) {
-
-          for (int row2 = 1; row2 <= mrows; row2++) {
-            for (int col2 = 1; col2 <= mcols; col2++) {
-
-              Coords c1 = new Coords(row1, col1);
-              Coords c2 = new Coords(row2, col2);
-              // System.err.println(c1 + " - " + c2);
-              if (c1.equals(c2)) {
-                // System.err.println("SKIP");
-              } else {
-                LOGGER.fine("CLICK PAIRS: " + c1 + " and " + c2);
-                Slot slot1 = matrix.get(c1);
-                Slot slot2 = matrix.get(c2);
-                if (slot1.image != null && slot2.image != null && sameImage(slot1.image, slot2.image)) {
-                  mouse.click(slot1.area.x, slot1.area.y);
-                  mouse.delay(200);
-                  mouse.click(slot2.area.x, slot2.area.y);
-                  mouse.delay(500);
-                  slot1.image = null;
-                  slot2.image = null;
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    return started;
-
-  }
 
   private BufferedImage scanSlot(Rectangle slotArea) throws AWTException {
     BufferedImage slotImage = new Robot().createScreenCapture(slotArea);
@@ -1108,7 +1112,7 @@ public class MainFrame extends JFrame {
           Thread t = new Thread(new Runnable() {
             public void run() {
               try {
-                doPairs();
+                new PairsProtocol().doPairs();
               } catch (RobotInterruptedException | IOException | AWTException e1) {
               }
 
