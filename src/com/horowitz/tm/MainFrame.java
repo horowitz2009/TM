@@ -62,7 +62,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.16";
+  private static String APP_TITLE = "TM v0.16g";
 
   private MouseRobot mouse;
 
@@ -362,8 +362,8 @@ public class MainFrame extends JFrame {
               mouse.delay(100);
               if (move) {
                 // move approach
-                Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2, scanner.getTopLeft().y
-                    + scanner.getGameHeight() / 2);
+                Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2,
+                    scanner.getTopLeft().y + scanner.getGameHeight() / 2);
                 // mouse.mouseMove(m);
                 final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
                 screenSize.width += 100;
@@ -614,6 +614,7 @@ public class MainFrame extends JFrame {
 
     public boolean doPairs() throws RobotInterruptedException, IOException, AWTException {
       boolean started = false;
+      done = false;
       int turn = 0;
       Pixel p = null;
       do {
@@ -641,15 +642,20 @@ public class MainFrame extends JFrame {
         Thread t = new Thread(new Runnable() {
           public void run() {
             try {
+              long threadTime = System.currentTimeMillis();
               do {
+
                 Rectangle clockArea = new Rectangle(pp.x + 857 + 34, pp.y + 499 + 35, 15, 24);
                 BufferedImage multiplier = scanSlot(clockArea);
                 if (!sameImage(scanner.getImageData("MultiplierZero.bmp").getImage(), multiplier)) {
-                  if (time == 0)
+                  if (time == 0) {
                     time = System.currentTimeMillis();
+                    LOGGER.info("UH OH...");
+                  }
                 }
                 Thread.sleep(100);
-              } while (!done);
+              } while (!done && System.currentTimeMillis() - threadTime < 60 * 1000);
+              LOGGER.info("T DONE");
             } catch (Exception e) {
               e.printStackTrace();
             }
@@ -660,8 +666,8 @@ public class MainFrame extends JFrame {
         for (int row = 1; row <= mrows; row++) {
           for (int col = 1; col <= mcols; col++) {
             Slot slot = new Slot(row, col, true);
-            Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gap) + 20, gameArea.y + (row - 1)
-                * (slotSize + gap) + 20, 40, 40);
+            Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gap) + 20,
+                gameArea.y + (row - 1) * (slotSize + gap) + 20, 40, 40);
             slot.area = slotArea;
             matrix.put(slot.coords, slot);
           }
@@ -697,23 +703,22 @@ public class MainFrame extends JFrame {
                 slot.image = scanSlot(slot.area);
                 Slot prevSlot = matrix.get(prev);
                 prevSlot.image = scanSlot(prevSlot.area);
-                // if (prev != null) {
-                // if (sameImage(prevSlot.image, slot.image)) {
-                // // we have match, so remove both
-                // prevSlot.image = null;
-                // slot.image = null;
-                // LOGGER.info("UH OH! Time is ticking now");
-                // //time = System.currentTimeMillis();
-                // }
-                // }
+                if (prev != null) {
+                  if (sameImage(prevSlot.image, slot.image)) {
+                    // we have match, so remove both
+                    prevSlot.image = null;
+                    slot.image = null;
+                    LOGGER.info("UH OH! Time is ticking now");
+                    time = System.currentTimeMillis();
+                  }
+                }
 
                 if (time != 0) {
-                  if (System.currentTimeMillis() - time > 3500) {
+                  if (System.currentTimeMillis() - time > 3000) {
 
                     LOGGER.info("click something ... " + (System.currentTimeMillis() - time));
 
                     clickMatches(mcols, mrows, matrix, 1);
-                    mouse.delay(100);
                     time = System.currentTimeMillis();
                     mouse.delay(400);
                   } else {
@@ -732,19 +737,9 @@ public class MainFrame extends JFrame {
         }
         done = true;
         time = 0l;
+
         // now find matches
         clickMatches(mcols, mrows, matrix, -1);
-
-        // int c = 0;
-        // for (BufferedImage im : list1) {
-        // c++;
-        // scanner.writeImage(im, "slot1_" + c + ".bmp");
-        // }
-        // c = 0;
-        // for (BufferedImage im : list2) {
-        // c++;
-        // scanner.writeImage(im, "slot2_" + c + ".bmp");
-        // }
       }
       return started;
 
@@ -753,8 +748,6 @@ public class MainFrame extends JFrame {
     private void clickMatches(int mcols, int mrows, Map<Coords, Slot> matrix, int maxClicks)
         throws RobotInterruptedException, AWTException {
       int clicks = 0;
-      List<BufferedImage> list1 = new ArrayList<>();
-      List<BufferedImage> list2 = new ArrayList<>();
       for (int row1 = 1; row1 <= mrows; row1++) {
         for (int col1 = 1; col1 <= mcols; col1++) {
 
@@ -767,22 +760,15 @@ public class MainFrame extends JFrame {
               if (c1.equals(c2)) {
                 // System.err.println("SKIP");
               } else {
-                if (maxClicks < 0 || clicks > maxClicks) {
-                  clicks++;
+                if (maxClicks < 0 || clicks < maxClicks) {
                   LOGGER.fine("CLICK PAIRS: " + c1 + " and " + c2);
                   Slot slot1 = matrix.get(c1);
                   Slot slot2 = matrix.get(c2);
                   if (slot1.image != null && slot2.image != null && sameImage(slot1.image, slot2.image)) {
+                    clicks++;
                     mouse.click(slot1.area.x, slot1.area.y);
                     mouse.delay(200);
                     mouse.click(slot2.area.x, slot2.area.y);
-                    // scan multi time for debug
-                    if (list1.isEmpty())
-                      for (int i = 0; i < 200; i++) {
-                        list1.add(scanSlot(slot1.area));
-                        list2.add(scanSlot(slot2.area));
-                        mouse.delay(10);
-                      }
                     mouse.delay(500);
                     slot1.image = null;
                     slot2.image = null;
@@ -793,18 +779,6 @@ public class MainFrame extends JFrame {
           }
         }
       }
-
-      int c = 0;
-      for (BufferedImage im : list1) {
-        c++;
-        scanner.writeImage(im, "slot1_" + c + ".bmp");
-      }
-      c = 0;
-      for (BufferedImage im : list2) {
-        c++;
-        scanner.writeImage(im, "slot2_" + c + ".bmp");
-      }
-
     }
 
   }
