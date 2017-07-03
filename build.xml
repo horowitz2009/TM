@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <project default="copy-jar" name="Create Runnable Jar for Project Daze">
 
-	<property name="versionNumber" value="16g" />
+	<property name="versionNumber" value="17b" />
 
 	<property name="jarname" value="TM${versionNumber}.jar" description="" />
 	<property name="dropboxjarname" value="DropboxRemote${versionNumber}.jar" description="" />
@@ -25,9 +25,9 @@
 			<mkdir dir="${dropbox}/${dir1}" />
 			<copy todir="${dropbox}/${dir1}" file="${jarname}" />
 
-		    <property name="dir2" value="office2" />
+		    <!--<property name="dir2" value="office2" />
 			<mkdir dir="${dropbox}/${dir2}" />
-			<copy todir="${dropbox}/${dir2}" file="${jarname}" />
+			<copy todir="${dropbox}/${dir2}" file="${jarname}" />-->
 
 			<!--<property name="dir2" value="SeaportROSKO" />
 			<mkdir dir="${dropbox}/${dir2}" />

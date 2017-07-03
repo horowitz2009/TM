@@ -62,7 +62,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.16g";
+  private static String APP_TITLE = "TM v0.17";
 
   private MouseRobot mouse;
 
@@ -180,8 +180,8 @@ public class MainFrame extends JFrame {
           int y = scanner.getTopLeft().y + 20;
           mouse.mouseMove(x, y);
           mouse.delay(3000);
-          Pixel p = scanner.scanOneFast("Duels.bmp", new Rectangle(x - 70, y, 140, 67), false);
-          if (p != null) {
+          Pixel p = scanner.scanOne("DuelsClock.bmp", new Rectangle(x - 70, y, 140, 67), false);
+          if (p == null) {
             LOGGER.info("DUELS FULL");
             duelsFull = true;
             ((AbstractGameProtocol) matchTask.getProtocol()).sleep(0);
@@ -264,34 +264,38 @@ public class MainFrame extends JFrame {
 
       private int clickMatch(Pixel p) throws RobotInterruptedException, IOException, AWTException {
         mouse.delay(3000);
-        Pixel ph = scanner.scanOneFast("EasyOpponent.bmp", scanner._scanArea, false);
+        Rectangle slot1Area = new Rectangle(p.x + 97, p.y + 221, 5, 13);
+        Rectangle slot2Area = new Rectangle(p.x + 97, p.y + 323, 5, 13);
+        // Rectangle slot3Area = new Rectangle(p.x + 97, p.y + 425, 5, 13);
+        Pixel ph = scanner.scanOneFast("EasyGreen.bmp", slot1Area, false);
+        Pixel pp = null;
         if (ph != null) {
-          mouse.click(ph.x + 319, ph.y - 41);
+          pp = new Pixel(ph.x + 332, ph.y - 42);
+        } else {
+          ph = scanner.scanOneFast("EasyGreen.bmp", slot2Area, false);
+          if (ph != null) {
+            pp = new Pixel(ph.x + 332, ph.y - 42);
+          }
+        }
+        if (pp == null && duelsFull)
+          pp = new Pixel(p.x + 424, p.y + 180);
+
+        if (pp != null) {
+          mouse.click(pp);
           mouse.delay(3000);
+
           Pixel pq = scanner.scanOneFast("playerComp.bmp", scanner._scanArea, false);
           if (pq != null) {
             mouse.click(pq.x + 198, pq.y + 257);
             LOGGER.info("match");
             mouse.delay(2000);
-            return 1;
-          }
-        } else {
-          if (duelsFull) {
-            //no choice, click once in first opponent
-            mouse.click(p.x + 424, p.y + 180);
-            mouse.delay(3000);
-            Pixel pq = scanner.scanOneFast("playerComp.bmp", scanner._scanArea, false);
-            if (pq != null) {
-              mouse.click(pq.x + 198, pq.y + 257);
-              LOGGER.info("match");
-              duelsFull = false;
-              mouse.delay(2000);
-              return 1;
-            }
-          }
-          return -1;
-        }
-        return 0;
+            return 1;// job well done
+          } else
+            return 0;// no duels, so sleep
+
+        } else
+          return -1;// no suitable opponents, may be => don't sleep, try again
+                    // soon
       }
     });
   }
@@ -396,10 +400,10 @@ public class MainFrame extends JFrame {
 
       @Override
       public void execute() throws RobotInterruptedException, GameErrorException {
+        int limit = settings.getInt("balls.limit", 0);
         if (_ballsToggle.isSelected())
           try {
 
-            int limit = settings.getInt("balls.limit", 0);
             if (limit > 0 && ballsCnt < limit || limit <= 0) {
 
               boolean move = settings.getBoolean("balls.move", true);
@@ -408,8 +412,8 @@ public class MainFrame extends JFrame {
               mouse.delay(100);
               if (move) {
                 // move approach
-                Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2,
-                    scanner.getTopLeft().y + scanner.getGameHeight() / 2);
+                Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2, scanner.getTopLeft().y
+                    + scanner.getGameHeight() / 2);
                 // mouse.mouseMove(m);
                 final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
                 screenSize.width += 100;
@@ -476,6 +480,8 @@ public class MainFrame extends JFrame {
           } catch (Exception e) {
             LOGGER.info("BALLS ERR");
           }
+
+        LOGGER.info("BALLS: " + ballsCnt + " / " + limit);
       }
 
       private void clickBalls(Rectangle area) throws RobotInterruptedException, IOException, AWTException {
@@ -595,7 +601,7 @@ public class MainFrame extends JFrame {
             Pixel p = scanner.scanOneFast("practiceArena.bmp", scanner._fullArea, false);
             if (p != null) {
               LOGGER.info("Practice arena...");
-              Rectangle area = new Rectangle(p.x - 194, p.y + 129, 650, 34);
+              Rectangle area = new Rectangle(p.x - 194, p.y + 129, 650, 134);
               // scanner.writeArea(area, "hmm.bmp");
               Pixel pq = scanner.scanOneFast(minigame + ".bmp", area, false);
               if (pq == null) {
@@ -615,7 +621,7 @@ public class MainFrame extends JFrame {
                 }
               }
               if (pq != null) {
-                mouse.click(pq.x, pq.y + 285);
+                mouse.click(pq.x, pq.y + 226);
                 mouse.delay(4000);
                 if (!doPairs()) {
                   LOGGER.info("no energy");
@@ -712,8 +718,8 @@ public class MainFrame extends JFrame {
         for (int row = 1; row <= mrows; row++) {
           for (int col = 1; col <= mcols; col++) {
             Slot slot = new Slot(row, col, true);
-            Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gap) + 20,
-                gameArea.y + (row - 1) * (slotSize + gap) + 20, 40, 40);
+            Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gap) + 20, gameArea.y + (row - 1)
+                * (slotSize + gap) + 20, 40, 40);
             slot.area = slotArea;
             matrix.put(slot.coords, slot);
           }
@@ -1249,17 +1255,11 @@ public class MainFrame extends JFrame {
 
     // TEST scan energy
     {
-      AbstractAction action = new AbstractAction("SE") {
+      AbstractAction action = new AbstractAction("Reset") {
         public void actionPerformed(ActionEvent e) {
           Thread t = new Thread(new Runnable() {
             public void run() {
-              // try {
-              // scanEnergy();
-              // } catch (AWTException e1) {
-              // // TODO Auto-generated catch block
-              // e1.printStackTrace();
-              // }
-
+              ((AbstractGameProtocol) ballTask.getProtocol()).reset();
             }
           });
           t.start();
