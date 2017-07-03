@@ -76,12 +76,15 @@ public class MainFrame extends JFrame {
   private Task practiceTask;
   private Task sponsorTask;
   private Task matchTask;
+  private Task checkDuelsTask;
   private Task premiumTask;
   private Task ballTask;
   private Task bankTask;
   private Task pairsTask;
 
   private TaskManager taskManager;
+
+  protected boolean duelsFull;
 
   public static void main(String[] args) {
 
@@ -135,10 +138,12 @@ public class MainFrame extends JFrame {
       bankTask();
       premiumTask();
       sponsorTask();
+      checkDuelsTask();
 
       taskManager = new TaskManager(mouse);
       taskManager.addTask(practiceTask);
       taskManager.addTask(pairsTask);
+      taskManager.addTask(checkDuelsTask);
       taskManager.addTask(matchTask);
       taskManager.addTask(bankTask);
       taskManager.addTask(premiumTask);
@@ -160,6 +165,41 @@ public class MainFrame extends JFrame {
 
   }
 
+  private void checkDuelsTask() {
+    checkDuelsTask = new Task("Check Duels", 1);
+    checkDuelsTask.setProtocol(new AbstractGameProtocol() {
+
+      @Override
+      public void execute() throws RobotInterruptedException, GameErrorException {
+        handlePopups();
+
+        try {
+          mouse.delay(1000);
+          // check duels here
+          int x = scanner.getTopLeft().x + scanner.getGameWidth() / 2;
+          int y = scanner.getTopLeft().y + 20;
+          mouse.mouseMove(x, y);
+          mouse.delay(3000);
+          Pixel p = scanner.scanOneFast("Duels.bmp", new Rectangle(x - 70, y, 140, 67), false);
+          if (p != null) {
+            LOGGER.info("DUELS FULL");
+            duelsFull = true;
+            ((AbstractGameProtocol) matchTask.getProtocol()).sleep(0);
+          } else
+            duelsFull = false;
+          mouse.delay(3000);
+        } catch (IOException e) {
+          e.printStackTrace();
+        } catch (AWTException e) {
+          e.printStackTrace();
+        }
+
+        sleep(1);
+      }
+
+    });
+  }
+
   private void matchTask() {
     matchTask = new Task("MATCH", 1);
     matchTask.setProtocol(new AbstractGameProtocol() {
@@ -167,16 +207,8 @@ public class MainFrame extends JFrame {
       @Override
       public void execute() throws RobotInterruptedException, GameErrorException {
         if (_matchesToggle.isSelected()) {
-          // mouse.delay(2000);
-          // 1. click practiceCourt.bmp
-          // 2. wait 3000
-          // 3. check is open practiceArena.bmp
-          // 4. find Quiz
-          // 5. click simulate.bmp
-          // 6. wait 4000
-          // 7. if ok, do nothing, else reschedule the task for 3 minutes
           int matches = 0;
-          int maxMatches = 2;
+          int maxMatches = 1;
 
           try {
             do {
@@ -210,7 +242,7 @@ public class MainFrame extends JFrame {
                   LOGGER.info("matches: " + matches);
                   clickBankDirectly();
                 } else {
-                  int minutes = settings.getInt("tasks.matches.sleep", 20);
+                  int minutes = settings.getInt("tasks.matches.sleep", 5);
                   if (code < 0)
                     minutes = 0;
                   bankTask.getProtocol().reset();
@@ -243,8 +275,22 @@ public class MainFrame extends JFrame {
             mouse.delay(2000);
             return 1;
           }
-        } else
+        } else {
+          if (duelsFull) {
+            //no choice, click once in first opponent
+            mouse.click(p.x + 424, p.y + 180);
+            mouse.delay(3000);
+            Pixel pq = scanner.scanOneFast("playerComp.bmp", scanner._scanArea, false);
+            if (pq != null) {
+              mouse.click(pq.x + 198, pq.y + 257);
+              LOGGER.info("match");
+              duelsFull = false;
+              mouse.delay(2000);
+              return 1;
+            }
+          }
           return -1;
+        }
         return 0;
       }
     });
@@ -624,8 +670,8 @@ public class MainFrame extends JFrame {
           started = true;
           break;
         } else
-          mouse.delay(500);
-      } while (!started && turn < 20);
+          mouse.delay(400);
+      } while (!started && turn < 12);
 
       if (started) {
         final Pixel pp = p;
