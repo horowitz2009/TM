@@ -62,7 +62,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.17";
+  private static String APP_TITLE = "TM v0.18";
 
   private MouseRobot mouse;
 
@@ -267,8 +267,8 @@ public class MainFrame extends JFrame {
         Rectangle slot1Area = new Rectangle(p.x + 97, p.y + 221, 5, 13);
         Rectangle slot2Area = new Rectangle(p.x + 97, p.y + 323, 5, 13);
         // Rectangle slot3Area = new Rectangle(p.x + 97, p.y + 425, 5, 13);
-        Pixel ph = scanner.scanOneFast("EasyGreen.bmp", slot1Area, false);
         Pixel pp = null;
+        Pixel ph = scanner.scanOneFast("EasyGreen.bmp", slot1Area, false);
         if (ph != null) {
           pp = new Pixel(ph.x + 332, ph.y - 42);
         } else {
@@ -277,6 +277,15 @@ public class MainFrame extends JFrame {
             pp = new Pixel(ph.x + 332, ph.y - 42);
           }
         }
+        
+        //try medium opponent
+        if (pp == null && settings.getBoolean("tasks.matches.medium", false)) {
+          ph = scanner.scanOneFast("MediumOrange.bmp", slot1Area, false);
+          if (ph != null) {
+            pp = new Pixel(ph.x + 332, ph.y - 42);
+          }
+        }
+        
         if (pp == null && duelsFull)
           pp = new Pixel(p.x + 424, p.y + 180);
 
