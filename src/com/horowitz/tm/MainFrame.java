@@ -299,11 +299,11 @@ public class MainFrame extends JFrame {
         Rectangle slot2Area = new Rectangle(p.x + 97, p.y + 323, 5, 13);
         // Rectangle slot3Area = new Rectangle(p.x + 97, p.y + 425, 5, 13);
         Pixel pp = null;
-        Pixel ph = scanner.scanOneFast("EasyGreen.bmp", slot1Area, false);
+        Pixel ph = scanner.scanOneFast("easyGreen.bmp", slot1Area, false);
         if (ph != null) {
           pp = new Pixel(ph.x + 332, ph.y - 42);
         } else {
-          ph = scanner.scanOneFast("EasyGreen.bmp", slot2Area, false);
+          ph = scanner.scanOneFast("easyGreen.bmp", slot2Area, false);
           if (ph != null) {
             pp = new Pixel(ph.x + 332, ph.y - 42);
           }
