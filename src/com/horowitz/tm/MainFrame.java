@@ -3,11 +3,15 @@ package com.horowitz.tm;
 import java.awt.AWTException;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.HeadlessException;
+import java.awt.Insets;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Robot;
@@ -20,6 +24,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.image.BufferedImage;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,6 +44,7 @@ import java.util.logging.Logger;
 import javax.swing.AbstractAction;
 import javax.swing.Box;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -62,7 +69,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.18";
+  private static String APP_TITLE = "TM v0.19";
 
   private MouseRobot mouse;
 
@@ -85,6 +92,8 @@ public class MainFrame extends JFrame {
   private TaskManager taskManager;
 
   protected boolean duelsFull;
+
+  private Stats stats;
 
   public static void main(String[] args) {
 
@@ -125,6 +134,7 @@ public class MainFrame extends JFrame {
       if (!settings.containsKey("tasks.balls")) {
         setDefaultSettings();
       }
+      stats = new Stats();
 
       scanner = new ScreenScanner(settings);
       mouse = scanner.getMouse();
@@ -223,24 +233,45 @@ public class MainFrame extends JFrame {
                 boolean success = code == 1;
                 if (success) {
                   success = false;
-                  p = scanner.scanOneFast("Continue.bmp", scanner._scanArea, true);
-                  if (p == null) {
-                    p = scanner.scanOneFast("grandPrize.bmp", scanner._scanArea, true);
-                    if (p != null) {
-                      handleAwards();
+
+                  // is it victory?
+                  Pixel pv = scanner.scanOneFast("victory.bmp", scanner._scanArea, false);
+                  if (pv != null) {
+                    stats.register("Matches");
+                    stats.register("Won");
+                    success = true;
+                  } else {
+                    pv = scanner.scanOneFast("defeat.bmp", scanner._scanArea, false);
+                    if (pv != null) {
+                      stats.register("Matches");
+                      stats.register("Lost");
+                      success = true;
                     }
                   }
-                  if (p != null) {
-                    success = true;
-                    matches++;
-                    handlePopups();
-                    mouse.delay(1000);
+                  if (success) {
+                    if (settings.getBoolean("ping", false)) {
+                      captureScreen("match ");
+                      deleteOlder("match", 120);
+                    }
+                  
+                    p = scanner.scanOneFast("Continue.bmp", scanner._scanArea, true);
+                    if (p == null) {
+                      p = scanner.scanOneFast("grandPrize.bmp", scanner._scanArea, true);
+                      if (p != null) {
+                        handleAwards();
+                      }
+                    }
+                    
+                    if (p != null) {
+                      matches++;
+                      handlePopups();
+                      mouse.delay(1000);
+                    }
+                    
                   }
-                }
-
-                if (success) {
-                  LOGGER.info("matches: " + matches);
+                  
                   clickBankDirectly();
+                  
                 } else {
                   int minutes = settings.getInt("tasks.matches.sleep", 5);
                   if (code < 0)
@@ -277,15 +308,15 @@ public class MainFrame extends JFrame {
             pp = new Pixel(ph.x + 332, ph.y - 42);
           }
         }
-        
-        //try medium opponent
+
+        // try medium opponent
         if (pp == null && settings.getBoolean("tasks.matches.medium", false)) {
           ph = scanner.scanOneFast("MediumOrange.bmp", slot1Area, false);
           if (ph != null) {
             pp = new Pixel(ph.x + 332, ph.y - 42);
           }
         }
-        
+
         if (pp == null && duelsFull)
           pp = new Pixel(p.x + 424, p.y + 180);
 
@@ -297,7 +328,7 @@ public class MainFrame extends JFrame {
           if (pq != null) {
             mouse.click(pq.x + 198, pq.y + 257);
             LOGGER.info("match");
-            mouse.delay(2000);
+            mouse.delay(3000);
             return 1;// job well done
           } else
             return 0;// no duels, so sleep
@@ -1038,7 +1069,101 @@ public class MainFrame extends JFrame {
 
     Box north = Box.createVerticalBox();
     north.add(toolbars);
+    north.add(createStatsPanel());
     rootPanel.add(north, BorderLayout.NORTH);
+  }
+
+  private Map<String, JLabel> _labels = new HashMap<String, JLabel>();
+
+  private Component createStatsPanel() {
+    JPanel panel = new JPanel(new GridBagLayout());
+    GridBagConstraints gbc = new GridBagConstraints();
+    GridBagConstraints gbc2 = new GridBagConstraints();
+    JLabel l;
+    gbc.gridx = 1;
+    gbc.gridy = 1;
+    gbc2.gridx = 2;
+    gbc2.gridy = 1;
+
+    gbc.insets = new Insets(2, 2, 2, 2);
+    gbc.anchor = GridBagConstraints.WEST;
+    gbc2.insets = new Insets(2, 4, 2, 16);
+    gbc2.anchor = GridBagConstraints.EAST;
+
+    // Matches
+    panel.add(new JLabel("Matches:"), gbc);
+    l = new JLabel(" ");
+    _labels.put("Matches", l);
+    panel.add(l, gbc2);
+
+    // Won
+    gbc.gridx += 2;
+    gbc2.gridx += 2;
+    panel.add(new JLabel("Won:"), gbc);
+    l = new JLabel(" ");
+    _labels.put("Won", l);
+    panel.add(l, gbc2);
+
+    // Lost
+    gbc.gridx += 2;
+    gbc2.gridx += 2;
+    panel.add(new JLabel("Lost:"), gbc);
+    l = new JLabel(" ");
+    _labels.put("Lost", l);
+    panel.add(l, gbc2);
+
+    // SECOND LINE
+    gbc.gridy++;
+    gbc2.gridy++;
+    gbc.gridx = 1;
+    gbc2.gridx = 2;
+
+    // Pairs
+    panel.add(new JLabel("Pairs:"), gbc);
+    l = new JLabel(" ");
+    _labels.put("Pairs", l);
+    panel.add(l, gbc2);
+
+    // Stars
+    gbc.gridx += 2;
+    gbc2.gridx += 2;
+    panel.add(new JLabel("Stars:"), gbc);
+    l = new JLabel(" ");
+    _labels.put("Stars", l);
+    panel.add(l, gbc2);
+
+    // FAKE
+    gbc2.gridx = 100;
+    gbc2.gridy = 1;
+    gbc2.weightx = 1.0f;
+    gbc2.weighty = 1.0f;
+    panel.add(new JLabel(""), gbc2);
+
+    Iterator<String> i = _labels.keySet().iterator();
+    while (i.hasNext()) {
+      String key = (String) i.next();
+      _labels.get(key).setText("" + 0);
+    }
+
+    stats.addPropertyChangeListener(new PropertyChangeListener() {
+
+      @Override
+      public void propertyChange(PropertyChangeEvent evt) {
+        if (evt.getPropertyName().equals("ALL")) {
+          Iterator<String> i = _labels.keySet().iterator();
+          while (i.hasNext()) {
+            String key = (String) i.next();
+            _labels.get(key).setText("" + 0);
+          }
+        } else {
+          JLabel l = _labels.get(evt.getPropertyName());
+          if (l != null)
+            l.setText("" + evt.getNewValue());
+        }
+      }
+    });
+
+    return panel;
   }
 
   private JToggleButton _pingToggle;
@@ -1269,6 +1394,7 @@ public class MainFrame extends JFrame {
           Thread t = new Thread(new Runnable() {
             public void run() {
               ((AbstractGameProtocol) ballTask.getProtocol()).reset();
+              stats.clear();
             }
           });
           t.start();
