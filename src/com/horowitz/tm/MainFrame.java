@@ -263,14 +263,14 @@ public class MainFrame extends JFrame {
                     }
                     
                     if (p != null) {
-                      matches++;
                       handlePopups();
                       mouse.delay(1000);
                     }
+                    clickBankDirectly();
                     
                   }
+                  matches++;
                   
-                  clickBankDirectly();
                   
                 } else {
                   int minutes = settings.getInt("tasks.matches.sleep", 5);
