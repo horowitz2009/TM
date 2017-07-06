@@ -69,7 +69,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.20f";
+  private static String APP_TITLE = "TM v0.20g";
 
   private MouseRobot mouse;
 
@@ -819,7 +819,7 @@ public class MainFrame extends JFrame {
 
                     if (clickMatches(mcols, mrows, matrix, 1)) {
                       time = System.currentTimeMillis();
-                      mouse.delay(200);
+                      mouse.delay(500);
                     } else {
                       LOGGER.info("no matches found yet :(");
                     }
@@ -869,9 +869,9 @@ public class MainFrame extends JFrame {
                   if (slot1.image != null && slot2.image != null && sameImage(slot1.image, slot2.image)) {
                     clicks++;
                     mouse.click(slot1.area.x, slot1.area.y);
-                    mouse.delay(100);
+                    mouse.delay(120);
                     mouse.click(slot2.area.x, slot2.area.y);
-                    mouse.delay(250);
+                    mouse.delay(450);
                     slot1.image = null;
                     slot2.image = null;
                   }
