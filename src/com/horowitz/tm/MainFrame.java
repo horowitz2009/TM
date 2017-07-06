@@ -69,7 +69,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.20g";
+  private static String APP_TITLE = "TM v0.20h";
 
   private MouseRobot mouse;
 
@@ -796,7 +796,7 @@ public class MainFrame extends JFrame {
               mouse.click(slot.area.x, slot.area.y);
               if (first) {
                 prev = coords;
-                mouse.delay(120);
+                mouse.delay(140);
               } else {
                 mouse.delay(600);
                 slot.image = scanSlot(slot.area);
@@ -817,12 +817,9 @@ public class MainFrame extends JFrame {
 
                     LOGGER.info("click something ... " + (System.currentTimeMillis() - time));
 
-                    if (clickMatches(mcols, mrows, matrix, 1)) {
-                      time = System.currentTimeMillis();
-                      mouse.delay(500);
-                    } else {
-                      LOGGER.info("no matches found yet :(");
-                    }
+                    clickMatches(mcols, mrows, matrix, 1);
+                    time = System.currentTimeMillis();
+                    mouse.delay(500);
                   } else {
                     LOGGER.info("wait..." + (System.currentTimeMillis() - time));
                   }
@@ -869,9 +866,9 @@ public class MainFrame extends JFrame {
                   if (slot1.image != null && slot2.image != null && sameImage(slot1.image, slot2.image)) {
                     clicks++;
                     mouse.click(slot1.area.x, slot1.area.y);
-                    mouse.delay(120);
+                    mouse.delay(200);
                     mouse.click(slot2.area.x, slot2.area.y);
-                    mouse.delay(450);
+                    mouse.delay(500);
                     slot1.image = null;
                     slot2.image = null;
                   }
