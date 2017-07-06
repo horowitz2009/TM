@@ -69,7 +69,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.20e";
+  private static String APP_TITLE = "TM v0.20f";
 
   private MouseRobot mouse;
 
@@ -310,7 +310,7 @@ public class MainFrame extends JFrame {
 
         // try medium opponent
         if (pp == null && settings.getBoolean("tasks.matches.medium", false)) {
-          ph = scanner.scanOneFast("MediumOrange.bmp", slot1Area, false);
+          ph = scanner.scanOneFast("mediumOrange.bmp", slot1Area, false);
           if (ph != null) {
             pp = new Pixel(ph.x + 332, ph.y - 42);
           }
