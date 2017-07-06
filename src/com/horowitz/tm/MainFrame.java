@@ -69,7 +69,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.19";
+  private static String APP_TITLE = "TM v0.20";
 
   private MouseRobot mouse;
 
@@ -250,10 +250,10 @@ public class MainFrame extends JFrame {
                   }
                   if (success) {
                     if (settings.getBoolean("ping", false)) {
-                      captureScreen("match ");
-                      deleteOlder("match", 120);
+                      captureScreen("ping/match ");
+                      deleteOlder("ping/match", 120);
                     }
-                  
+
                     p = scanner.scanOneFast("Continue.bmp", scanner._scanArea, true);
                     if (p == null) {
                       p = scanner.scanOneFast("grandPrize.bmp", scanner._scanArea, true);
@@ -261,17 +261,16 @@ public class MainFrame extends JFrame {
                         handleAwards();
                       }
                     }
-                    
+
                     if (p != null) {
                       handlePopups();
                       mouse.delay(1000);
                     }
                     clickBankDirectly();
-                    
+
                   }
                   matches++;
-                  
-                  
+
                 } else {
                   int minutes = settings.getInt("tasks.matches.sleep", 5);
                   if (code < 0)
@@ -528,11 +527,15 @@ public class MainFrame extends JFrame {
         int limit = settings.getInt("balls.limit", 0);
         if (limit > 0 && ballsCnt < limit || limit <= 0) {
           Pixel p = scanner.scanOneFast("ball.bmp", area, true);
-          if (p != null)
+          if (p != null) {
             ballsCnt++;
+            stats.register("Balls");
+          }
           p = scanner.scanOneFast("ball.bmp", area, true);
-          if (p != null)
+          if (p != null) {
             ballsCnt++;
+            stats.register("Balls");
+          }
         }
       }
     });
@@ -672,6 +675,9 @@ public class MainFrame extends JFrame {
                   mouse.delay(6000);
 
                   // AFTER GAME
+                  captureScreen("ping/pairs ");
+                  deleteOlder("ping/pairs", 120);
+                  stats.register("Pairs");
                   p = scanner.scanOneFast("ContinueBrown.bmp", scanner._scanArea, true);
                   if (p == null) {
                     int xx = (scanner.getTopLeft().x + scanner.getGameWidth() / 2);
@@ -746,7 +752,7 @@ public class MainFrame extends JFrame {
                   }
                 }
                 Thread.sleep(100);
-              } while (!done && System.currentTimeMillis() - threadTime < 60 * 1000);
+              } while (!done && System.currentTimeMillis() - threadTime < 90 * 1000);
               LOGGER.info("T DONE");
             } catch (Exception e) {
               e.printStackTrace();
@@ -789,7 +795,7 @@ public class MainFrame extends JFrame {
               mouse.click(slot.area.x, slot.area.y);
               if (first) {
                 prev = coords;
-                mouse.delay(150);
+                mouse.delay(120);
               } else {
                 mouse.delay(600);
                 slot.image = scanSlot(slot.area);
@@ -812,7 +818,7 @@ public class MainFrame extends JFrame {
 
                     clickMatches(mcols, mrows, matrix, 1);
                     time = System.currentTimeMillis();
-                    mouse.delay(400);
+                    mouse.delay(200);
                   } else {
                     LOGGER.info("wait..." + (System.currentTimeMillis() - time));
                   }
@@ -859,9 +865,9 @@ public class MainFrame extends JFrame {
                   if (slot1.image != null && slot2.image != null && sameImage(slot1.image, slot2.image)) {
                     clicks++;
                     mouse.click(slot1.area.x, slot1.area.y);
-                    mouse.delay(200);
+                    mouse.delay(100);
                     mouse.click(slot2.area.x, slot2.area.y);
-                    mouse.delay(500);
+                    mouse.delay(250);
                     slot1.image = null;
                     slot2.image = null;
                   }
@@ -1127,9 +1133,9 @@ public class MainFrame extends JFrame {
     // Stars
     gbc.gridx += 2;
     gbc2.gridx += 2;
-    panel.add(new JLabel("Stars:"), gbc);
+    panel.add(new JLabel("Balls:"), gbc);
     l = new JLabel(" ");
-    _labels.put("Stars", l);
+    _labels.put("Balls", l);
     panel.add(l, gbc2);
 
     // FAKE
@@ -1793,6 +1799,8 @@ public class MainFrame extends JFrame {
         mouse.delay(3500);
         mouse.click(p.x + 218, p.y);
         mouse.delay(3500);
+        captureScreen("ping/awards ");
+        deleteOlder("ping/awards ", 25);
         mouse.click(p.x + 218, p.y + 146); // pick up
         mouse.delay(3500);
       }
