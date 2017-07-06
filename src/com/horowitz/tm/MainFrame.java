@@ -69,7 +69,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.20";
+  private static String APP_TITLE = "TM v0.20e";
 
   private MouseRobot mouse;
 
@@ -771,8 +771,6 @@ public class MainFrame extends JFrame {
           }
         }
 
-        t.start();
-
         for (int row = 1; row <= mrows; row++) {
           for (int col = 1; col <= mcols; col++) {
             Slot slot = matrix.get(new Coords(row, col));
@@ -785,6 +783,9 @@ public class MainFrame extends JFrame {
             }
           }
         }
+
+        t.start();
+
         boolean first = true;
         Coords prev = null;
         for (int row = 1; row <= mrows; row++) {
@@ -816,9 +817,12 @@ public class MainFrame extends JFrame {
 
                     LOGGER.info("click something ... " + (System.currentTimeMillis() - time));
 
-                    clickMatches(mcols, mrows, matrix, 1);
-                    time = System.currentTimeMillis();
-                    mouse.delay(200);
+                    if (clickMatches(mcols, mrows, matrix, 1)) {
+                      time = System.currentTimeMillis();
+                      mouse.delay(200);
+                    } else {
+                      LOGGER.info("no matches found yet :(");
+                    }
                   } else {
                     LOGGER.info("wait..." + (System.currentTimeMillis() - time));
                   }
@@ -843,7 +847,7 @@ public class MainFrame extends JFrame {
 
     }
 
-    private void clickMatches(int mcols, int mrows, Map<Coords, Slot> matrix, int maxClicks)
+    private boolean clickMatches(int mcols, int mrows, Map<Coords, Slot> matrix, int maxClicks)
         throws RobotInterruptedException, AWTException {
       int clicks = 0;
       for (int row1 = 1; row1 <= mrows; row1++) {
@@ -877,6 +881,7 @@ public class MainFrame extends JFrame {
           }
         }
       }
+      return clicks > 0;
     }
 
   }
