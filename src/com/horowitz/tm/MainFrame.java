@@ -69,7 +69,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.20h";
+  private static String APP_TITLE = "TM v0.21";
 
   private MouseRobot mouse;
 
@@ -137,10 +137,14 @@ public class MainFrame extends JFrame {
       stats = new Stats();
 
       scanner = new ScreenScanner(settings);
+      scanner.getMatcher().setSimilarityThreshold(.90d);
+      
       mouse = scanner.getMouse();
       _pairsComparator = new SimilarityImageComparator(0.04, 3000);
       _pairsComparator.setErrors(8);
 
+      //testImages();
+      
       ballTask();
       practiceTaskSIM();
       practiceTaskPAIRS();
@@ -173,6 +177,22 @@ public class MainFrame extends JFrame {
 
     runSettingsListener();
 
+  }
+
+  private void testImages() {
+    try {
+      scanner.getMatcher().setSimilarityThreshold(.90d);
+      Pixel c = scanner.getMatcher().findMatch(scanner.getImageData("prizeMatches.bmp").getImage(), scanner.getImageData("grandPrize.bmp").getImage(), Color.RED);
+      System.err.println("MATCHER: " + c);
+//      _pairsComparator.setErrors(8);
+//      _pairsComparator.setPrecision(2000);
+//      boolean hmm = sameImage(scanner.getImageData("prizeMatches.bmp").getImage(), scanner.getImageData("grandPrize.bmp").getImage());
+//      System.err.println("SAME:" + hmm);
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    
   }
 
   private void checkDuelsTask() {
@@ -233,30 +253,33 @@ public class MainFrame extends JFrame {
                 boolean success = code == 1;
                 if (success) {
                   success = false;
-
+                  boolean won = false;
                   // is it victory?
                   Pixel pv = scanner.scanOneFast("victory.bmp", scanner._scanArea, false);
                   if (pv != null) {
                     stats.register("Matches");
                     stats.register("Won");
                     success = true;
+                    won = true;
                   } else {
                     pv = scanner.scanOneFast("defeat.bmp", scanner._scanArea, false);
                     if (pv != null) {
                       stats.register("Matches");
                       stats.register("Lost");
                       success = true;
+                      won = false;
                     }
                   }
                   if (success) {
                     if (settings.getBoolean("ping", false)) {
                       captureScreen("ping/match ");
-                      deleteOlder("ping/match", 120);
+                      deleteOlder("ping", "match", -1, 24);
                     }
 
                     p = scanner.scanOneFast("Continue.bmp", scanner._scanArea, true);
-                    if (p == null) {
-                      p = scanner.scanOneFast("grandPrize.bmp", scanner._scanArea, true);
+                    if (p == null && won) {
+                      Rectangle area = new Rectangle(pv.x, pv.y + 380, 170, 60);
+                      p = scanner.scanOne("PrizeMatches.bmp", area, true);
                       if (p != null) {
                         handleAwards();
                       }
@@ -676,13 +699,13 @@ public class MainFrame extends JFrame {
 
                   // AFTER GAME
                   captureScreen("ping/pairs ");
-                  deleteOlder("ping/pairs", 120);
+                  deleteOlder("ping", "pairs", -1, 24);
                   stats.register("Pairs");
                   p = scanner.scanOneFast("ContinueBrown.bmp", scanner._scanArea, true);
                   if (p == null) {
                     int xx = (scanner.getTopLeft().x + scanner.getGameWidth() / 2);
 
-                    p = scanner.scanOneFast("grandPrize2.bmp", scanner._scanArea, true);
+                    p = scanner.scanOneFast("prizePractice.bmp", scanner._scanArea, true);
                     if (p != null) {
                       handleAwards();
                     } else {
@@ -1681,7 +1704,7 @@ public class MainFrame extends JFrame {
   }
 
   private void refresh(boolean bookmark) throws AWTException, IOException, RobotInterruptedException {
-    deleteOlder("refresh", 5);
+    deleteOlder(".","refresh", 5, -1);
     LOGGER.info("Time to refresh...");
     scanner.captureGameArea("refresh ");
     Pixel p;
@@ -1802,7 +1825,7 @@ public class MainFrame extends JFrame {
         mouse.click(p.x + 218, p.y);
         mouse.delay(3500);
         captureScreen("ping/awards ");
-        deleteOlder("ping/awards ", 25);
+        deleteOlder("ping", "awards", -1, 24);
         mouse.click(p.x + 218, p.y + 146); // pick up
         mouse.delay(3500);
       }
@@ -2006,20 +2029,22 @@ public class MainFrame extends JFrame {
 
   }
 
-  private void deleteOlder(String prefix, int amountFiles) {
-    File f = new File(".");
+  private void deleteOlder(String folder, String prefix, int amountFiles, int hours) {
+    File f = new File(folder);
     File[] files = f.listFiles();
     List<File> targetFiles = new ArrayList<File>(6);
     int cnt = 0;
     for (File file : files) {
       if (!file.isDirectory() && file.getName().startsWith(prefix)) {
-        targetFiles.add(file);
-        cnt++;
+        if (hours < 0 || (hours > 0 && System.currentTimeMillis() - file.lastModified() > hours * 60 * 60000)) {
+          targetFiles.add(file);
+          cnt++;
+        }
       }
     }
 
-    if (cnt > amountFiles) {
-      // delete some files
+    if (amountFiles > 0 && cnt > amountFiles) {
+      //sort them before delete them
       Collections.sort(targetFiles, new Comparator<File>() {
         public int compare(File o1, File o2) {
           if (o1.lastModified() > o2.lastModified())
@@ -2031,7 +2056,15 @@ public class MainFrame extends JFrame {
       });
 
       int c = cnt - 5;
+      // delete some files
       for (int i = 0; i < c; i++) {
+        File fd = targetFiles.get(i);
+        fd.delete();
+      }
+      
+    } else if (amountFiles < 0) {
+      //delete all 
+      for (int i = 0; i < targetFiles.size(); i++) {
         File fd = targetFiles.get(i);
         fd.delete();
       }
@@ -2050,7 +2083,7 @@ public class MainFrame extends JFrame {
       area = new Rectangle(0, 0, screenSize.width, screenSize.height);
     }
     writeImage(area, filename + DateUtils.formatDateForFile(System.currentTimeMillis()) + ".jpg");
-    deleteOlder("ping", 8);
+    deleteOlder(".", "ping", 8, -1);
   }
 
   public void writeImage(Rectangle rect, String filename) {
