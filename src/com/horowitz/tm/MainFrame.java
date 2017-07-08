@@ -69,7 +69,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.21b";
+  private static String APP_TITLE = "TM v0.21c";
 
   private MouseRobot mouse;
 
@@ -537,6 +537,7 @@ public class MainFrame extends JFrame {
                 clickBalls(scanner._fullArea);
               }
               mouse.delay(500);
+              refresh();
             }
             int minutes = settings.getInt("balls.sleep", 20);
             LOGGER.info("BALLS SO FAR: " + ballsCnt);
