@@ -69,7 +69,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.21c";
+  private static String APP_TITLE = "TM v0.22";
 
   private MouseRobot mouse;
 
@@ -375,15 +375,26 @@ public class MainFrame extends JFrame {
         try {
           mouse.click(scanner.getTopLeft().x + scanner.getGameWidth() / 2, scanner.getTopLeft().y + 63);
           mouse.delay(3000);
-          Pixel p = scanner.scanOneFast("PremiumTitle.bmp", scanner._scanArea, false);
+          Pixel p = scanner.scanOneFast("premiumFree1.bmp", scanner._scanArea, false);
           if (p != null) {
-            LOGGER.info("premium opened");
-            mouse.click(p.x + 24, p.y + 248);
+            LOGGER.info("premium 1");
+            mouse.click(p.x + 38, p.y + 103);
             mouse.delay(3000);
-            LOGGER.info("sleep 10min");
-            sleep(10 * 60000);
-            handlePopups();
+            
+            //scroller
+            mouse.click(p.x + 558, p.y + 355);
+            mouse.delay(2000);
+            p = scanner.scanOneFast("premiumFree2.bmp", scanner._scanArea, false);
+            if (p!= null) {
+              LOGGER.info("premium 2");
+              mouse.click(p.x + 41, p.y + 106);
+              mouse.delay(3000);
+            }
           }
+          
+          LOGGER.info("sleep 10min");
+          sleep(10 * 60000);
+          handlePopups();
 
         } catch (IOException | AWTException e) {
           e.printStackTrace();
