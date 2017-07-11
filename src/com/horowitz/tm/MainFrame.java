@@ -69,7 +69,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.22";
+  private static String APP_TITLE = "TM v0.22s";
 
   private MouseRobot mouse;
 
@@ -161,7 +161,7 @@ public class MainFrame extends JFrame {
       taskManager.addTask(matchTask);
       taskManager.addTask(bankTask);
       taskManager.addTask(premiumTask);
-      // taskManager.addTask(sponsorTask);
+      taskManager.addTask(sponsorTask);
       taskManager.addTask(ballTask);
       stopAllThreads = false;
 
@@ -420,7 +420,9 @@ public class MainFrame extends JFrame {
             if (p != null) {
               LOGGER.info("sponsor opened");
               mouse.click(p.x, p.y + 303);
-              mouse.delay(3000);
+              mouse.delay(500);
+              mouse.click(p.x+357, p.y + 303);
+              mouse.delay(2500);
               LOGGER.info("sleep 5min");
               sleep(5 * 60000);
               handlePopups();
