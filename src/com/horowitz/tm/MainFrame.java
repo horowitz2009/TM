@@ -909,158 +909,162 @@ public class MainFrame extends JFrame {
         int mwidth = mcols * (slotSize + gap) - gap;
         int mheight = mrows * (slotSize + gap) - gap;
         Rectangle gameArea = new Rectangle(p.x + 308 - 80 - 7 - 80 - 7, p.y + 143, mwidth, mheight);
-        int slotsNumber;
+        int slotsNumber = 0;
 
         do {
-          slotsNumber = mrows * mcols;
-          done = false;
+          try {
+            slotsNumber = mrows * mcols;
+            done = false;
 
-          // CREATE THREAD
-          Thread t = new Thread(new Runnable() {
-            public void run() {
-              try {
-                long threadTime = System.currentTimeMillis();
-                do {
+            // CREATE THREAD
+            Thread t = new Thread(new Runnable() {
+              public void run() {
+                try {
+                  long threadTime = System.currentTimeMillis();
+                  do {
 
-                  Rectangle clockArea = new Rectangle(pp.x + 857 + 34, pp.y + 499 + 35, 15, 24);
-                  BufferedImage multiplier = scanSlot(clockArea);
-                  if (!sameImage(scanner.getImageData("MultiplierZero.bmp").getImage(), multiplier)) {
-                    if (time == 0) {
-                      time = System.currentTimeMillis();
-                      LOGGER.info("UH OH...");
+                    Rectangle clockArea = new Rectangle(pp.x + 857 + 34, pp.y + 499 + 35, 15, 24);
+                    BufferedImage multiplier = scanSlot(clockArea);
+                    if (!sameImage(scanner.getImageData("MultiplierZero.bmp").getImage(), multiplier)) {
+                      if (time == 0) {
+                        time = System.currentTimeMillis();
+                        LOGGER.info("UH OH...");
+                      }
                     }
-                  }
-                  Thread.sleep(100);
-                } while (!done && System.currentTimeMillis() - threadTime < 90 * 1000);
-                LOGGER.info("T DONE");
-              } catch (Exception e) {
-                e.printStackTrace();
-              }
-            }
-          });
-
-          // MATRIX
-          Map<Coords, Slot> matrix = new HashMap<Coords, Slot>();
-          for (int row = 1; row <= mrows; row++) {
-            for (int col = 1; col <= mcols; col++) {
-              Slot slot = new Slot(row, col, true);
-              Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gap) + 20,
-                  gameArea.y + (row - 1) * (slotSize + gap) + 20, 40, 40);
-              slot.area = slotArea;
-              matrix.put(slot.coords, slot);
-            }
-          }
-
-          for (int row = 1; row <= mrows; row++) {
-            for (int col = 1; col <= mcols; col++) {
-              Slot slot = matrix.get(new Coords(row, col));
-
-              slot.image = scanSlot(slot.area);
-
-              if (!sameImage(scanner.getImageData("back.bmp").getImage(), slot.image)) {
-                // slot.image = null;
-                slot.active = false;
-                slotsNumber--;
-              }
-            }
-          }
-
-          boolean first = true;
-          Coords prev = null;
-          Coords openSlot = null;
-          // ODD number check
-          if ((slotsNumber % 2) != 0) {
-            LOGGER.info("ODD NUMBER OF SLOTS");
-            for (int row = 1; row <= mrows && first; row++) {
-              for (int col = 1; col <= mcols && first; col++) {
-                Slot slot = matrix.get(new Coords(row, col));
-
-                if (!slot.active) {
-                  // check is flipped one
-                  Rectangle cornerArea = new Rectangle(slot.area);
-                  cornerArea.x -= 20;
-                  cornerArea.y -= 20;
-                  cornerArea.width = 10;
-                  cornerArea.height = 10;
-
-                  Pixel ppp = _pairsComparator.findImage(scanner.getImageData("TLCorner.bmp").getImage(),
-                      scanSlot(cornerArea), Color.RED);
-                  if (ppp != null) {
-                    // found it
-                    slot.active = true;
-                    slotsNumber++;
-                    first = false;
-                    prev = slot.coords;
-                    openSlot = slot.coords;
-                    break;
-                  }
+                    Thread.sleep(100);
+                  } while (!done && System.currentTimeMillis() - threadTime < 90 * 1000);
+                  LOGGER.info("T DONE");
+                } catch (Exception e) {
+                  e.printStackTrace();
                 }
               }
+            });
+
+            // MATRIX
+            Map<Coords, Slot> matrix = new HashMap<Coords, Slot>();
+            for (int row = 1; row <= mrows; row++) {
+              for (int col = 1; col <= mcols; col++) {
+                Slot slot = new Slot(row, col, true);
+                Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gap) + 20,
+                    gameArea.y + (row - 1) * (slotSize + gap) + 20, 40, 40);
+                slot.area = slotArea;
+                matrix.put(slot.coords, slot);
+              }
             }
-          }
-
-          LOGGER.info("Slots: " + slotsNumber);
-
-          if (slotsNumber > 0) {
-            t.start();
 
             for (int row = 1; row <= mrows; row++) {
               for (int col = 1; col <= mcols; col++) {
-                Coords coords = new Coords(row, col);
-                Slot slot = matrix.get(coords);
-                if (openSlot != null && coords.equals(openSlot)) {
-                  LOGGER.info("openslot...");
+                Slot slot = matrix.get(new Coords(row, col));
 
-                } else {
-                  if (slot.active) {
-                    mouse.click(slot.area.x, slot.area.y);
-                    if (first) {
-                      prev = coords;
-                      mouse.delay(140);
-                    } else {
-                      mouse.delay(600);
-                      slot.image = scanSlot(slot.area);
-                      Slot prevSlot = matrix.get(prev);
-                      prevSlot.image = scanSlot(prevSlot.area);
-                      // if (sameImage(prevSlot.image, slot.image)) {
-                      // // we have match, so remove both
-                      // prevSlot.image = null;
-                      // slot.image = null;
-                      // LOGGER.info("UH OH! Time is ticking now");
-                      // time = System.currentTimeMillis();
-                      // }
+                slot.image = scanSlot(slot.area);
 
-                      if (time != 0) {
-                        if (System.currentTimeMillis() - time > 3000) {
+                if (!sameImage(scanner.getImageData("back.bmp").getImage(), slot.image)) {
+                  // slot.image = null;
+                  slot.active = false;
+                  slotsNumber--;
+                }
+              }
+            }
 
-                          LOGGER.info("click something ... " + (System.currentTimeMillis() - time));
-                          mouse.delay(400);
-                          clickMatches(mcols, mrows, matrix, 1);
-                          time = System.currentTimeMillis();
-                          mouse.delay(200);
+            boolean first = true;
+            Coords prev = null;
+            Coords openSlot = null;
+            // ODD number check
+            if ((slotsNumber % 2) != 0) {
+              LOGGER.info("ODD NUMBER OF SLOTS");
+              for (int row = 1; row <= mrows && first; row++) {
+                for (int col = 1; col <= mcols && first; col++) {
+                  Slot slot = matrix.get(new Coords(row, col));
 
-                        } else {
-                          LOGGER.info("wait..." + (System.currentTimeMillis() - time));
-                        }
-                      }
+                  if (!slot.active) {
+                    // check is flipped one
+                    Rectangle cornerArea = new Rectangle(slot.area);
+                    cornerArea.x -= 20;
+                    cornerArea.y -= 20;
+                    cornerArea.width = 10;
+                    cornerArea.height = 10;
 
+                    Pixel ppp = _pairsComparator.findImage(scanner.getImageData("TLCorner.bmp").getImage(),
+                        scanSlot(cornerArea), Color.RED);
+                    if (ppp != null) {
+                      // found it
+                      slot.active = true;
+                      slotsNumber++;
+                      first = false;
+                      prev = slot.coords;
+                      openSlot = slot.coords;
+                      break;
                     }
-                    // scanner.writeImage(slot.image, "slot_flipped" +
-                    // slot.coords.toString() + ".jpg");
-
-                    first = !first;
-                    // mouse.delay(150);
                   }
                 }
               }
             }
-            done = true;
-            time = 0l;
 
-            // now find matches
-            clickMatches(mcols, mrows, matrix, -1);
+            LOGGER.info("Slots: " + slotsNumber);
 
-            mouse.delay(2000);
+            if (slotsNumber > 0) {
+              t.start();
+
+              for (int row = 1; row <= mrows; row++) {
+                for (int col = 1; col <= mcols; col++) {
+                  Coords coords = new Coords(row, col);
+                  Slot slot = matrix.get(coords);
+                  if (openSlot != null && coords.equals(openSlot)) {
+                    LOGGER.info("openslot...");
+
+                  } else {
+                    if (slot.active) {
+                      mouse.click(slot.area.x, slot.area.y);
+                      if (first) {
+                        prev = coords;
+                        mouse.delay(140);
+                      } else {
+                        mouse.delay(600);
+                        slot.image = scanSlot(slot.area);
+                        Slot prevSlot = matrix.get(prev);
+                        prevSlot.image = scanSlot(prevSlot.area);
+                        // if (sameImage(prevSlot.image, slot.image)) {
+                        // // we have match, so remove both
+                        // prevSlot.image = null;
+                        // slot.image = null;
+                        // LOGGER.info("UH OH! Time is ticking now");
+                        // time = System.currentTimeMillis();
+                        // }
+
+                        if (time != 0) {
+                          if (System.currentTimeMillis() - time > 3000) {
+
+                            LOGGER.info("click something ... " + (System.currentTimeMillis() - time));
+                            mouse.delay(400);
+                            clickMatches(mcols, mrows, matrix, 1);
+                            time = System.currentTimeMillis();
+                            mouse.delay(200);
+
+                          } else {
+                            LOGGER.info("wait..." + (System.currentTimeMillis() - time));
+                          }
+                        }
+
+                      }
+                      // scanner.writeImage(slot.image, "slot_flipped" +
+                      // slot.coords.toString() + ".jpg");
+
+                      first = !first;
+                      // mouse.delay(150);
+                    }
+                  }
+                }
+              }
+              done = true;
+              time = 0l;
+
+              // now find matches
+              clickMatches(mcols, mrows, matrix, -1);
+
+              mouse.delay(2000);
+            }
+          } catch (Exception e) {
+            LOGGER.info("WHAT HAPPENED? " + e.getMessage());
           }
           // END OF CYCLE
         } while (slotsNumber > 0);
