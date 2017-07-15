@@ -69,7 +69,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.22s";
+  private static String APP_TITLE = "TM v0.23";
 
   private MouseRobot mouse;
 
@@ -94,6 +94,8 @@ public class MainFrame extends JFrame {
   protected boolean duelsFull;
 
   private Stats stats;
+
+  private Task clubTask;
 
   public static void main(String[] args) {
 
@@ -152,6 +154,7 @@ public class MainFrame extends JFrame {
       bankTask();
       premiumTask();
       sponsorTask();
+      clubTask();
       checkDuelsTask();
 
       taskManager = new TaskManager(mouse);
@@ -163,6 +166,7 @@ public class MainFrame extends JFrame {
       taskManager.addTask(premiumTask);
       taskManager.addTask(sponsorTask);
       taskManager.addTask(ballTask);
+      taskManager.addTask(clubTask);
       stopAllThreads = false;
 
     } catch (Exception e1) {
@@ -204,32 +208,33 @@ public class MainFrame extends JFrame {
 
       @Override
       public void execute() throws RobotInterruptedException, GameErrorException {
-        handlePopups();
+        if (_matchesToggle.isSelected()) {
+          handlePopups();
 
-        try {
-          mouse.delay(1000);
-          // check duels here
-          int x = scanner.getTopLeft().x + scanner.getGameWidth() / 2;
-          int y = scanner.getTopLeft().y + 20;
-          mouse.mouseMove(x, y);
-          mouse.delay(3000);
-          Pixel p = scanner.scanOne("DuelsClock.bmp", new Rectangle(x - 70, y, 140, 67), false);
-          if (p == null) {
-            LOGGER.info("DUELS FULL");
-            duelsFull = true;
-            ((AbstractGameProtocol) matchTask.getProtocol()).sleep(0);
-          } else
-            duelsFull = false;
-          mouse.delay(3000);
-        } catch (IOException e) {
-          e.printStackTrace();
-        } catch (AWTException e) {
-          e.printStackTrace();
+          try {
+            mouse.delay(1000);
+            // check duels here
+            int x = scanner.getTopLeft().x + scanner.getGameWidth() / 2;
+            int y = scanner.getTopLeft().y + 20;
+            mouse.mouseMove(x, y);
+            mouse.delay(3000);
+            Pixel p = scanner.scanOne("DuelsClock.bmp", new Rectangle(x - 70, y, 140, 67), false);
+            if (p == null) {
+              LOGGER.info("DUELS FULL");
+              duelsFull = true;
+              ((AbstractGameProtocol) matchTask.getProtocol()).sleep(0);
+            } else
+              duelsFull = false;
+            mouse.delay(3000);
+          } catch (IOException e) {
+            e.printStackTrace();
+          } catch (AWTException e) {
+            e.printStackTrace();
+          }
+
+          sleep(1);
         }
-
-        sleep(1);
       }
-
     });
   }
 
@@ -245,7 +250,8 @@ public class MainFrame extends JFrame {
 
           try {
             do {
-              scanner.scanOneFast(scanner.getImageData("centerCourt.bmp", scanner._scanArea, -71, -51), scanner._scanArea, true);
+              scanner.scanOneFast(scanner.getImageData("centerCourt.bmp", scanner._scanArea, -71, -51),
+                  scanner._scanArea, true);
               mouse.delay(3000);
               Pixel p = scanner.scanOneFast("centerCourtTitle.bmp", scanner._scanArea, false);
               if (p != null) {
@@ -373,6 +379,10 @@ public class MainFrame extends JFrame {
       public void execute() throws RobotInterruptedException, GameErrorException {
 
         try {
+          mouse.mouseMove(scanner.getParkingPoint());
+          handlePopups();
+          mouse.mouseMove(scanner.getParkingPoint());
+
           mouse.click(scanner.getTopLeft().x + scanner.getGameWidth() / 2, scanner.getTopLeft().y + 63);
           mouse.delay(3000);
           Pixel p = scanner.scanOneFast("premiumFree1.bmp", scanner._scanArea, false);
@@ -380,18 +390,19 @@ public class MainFrame extends JFrame {
             LOGGER.info("premium 1");
             mouse.click(p.x + 38, p.y + 103);
             mouse.delay(3000);
-            
-            //scroller
+
+            // scroller
             mouse.click(p.x + 558, p.y + 355);
             mouse.delay(2000);
-            p = scanner.scanOneFast("premiumFree2.bmp", scanner._scanArea, false);
-            if (p!= null) {
-              LOGGER.info("premium 2");
-              mouse.click(p.x + 41, p.y + 106);
-              mouse.delay(3000);
-            }
+            // p = scanner.scanOneFast("premiumFree2.bmp", scanner._scanArea,
+            // false);
+            // if (p != null) {
+            LOGGER.info("premium 2");
+            mouse.click(p.x + 41, p.y + 131);
+            mouse.delay(3000);
+            // }
           }
-          
+
           LOGGER.info("sleep 10min");
           sleep(10 * 60000);
           handlePopups();
@@ -421,7 +432,7 @@ public class MainFrame extends JFrame {
               LOGGER.info("sponsor opened");
               mouse.click(p.x, p.y + 303);
               mouse.delay(500);
-              mouse.click(p.x+357, p.y + 303);
+              mouse.click(p.x + 357, p.y + 303);
               mouse.delay(2500);
               LOGGER.info("sleep 5min");
               sleep(5 * 60000);
@@ -433,6 +444,84 @@ public class MainFrame extends JFrame {
           e.printStackTrace();
         }
 
+      }
+    });
+  }
+
+  private void clubTask() {
+    clubTask = new Task("Club", 1);
+    clubTask.setProtocol(new AbstractGameProtocol() {
+
+      @Override
+      public void execute() throws RobotInterruptedException, GameErrorException {
+
+        try {
+          handlePopups();
+          Pixel p = scanner.scanOneFast("club.bmp", scanner._scanArea, false);
+          if (p == null) {
+            // move se
+            Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2,
+                scanner.getTopLeft().y + scanner.getGameHeight() / 2);
+            // mouse.mouseMove(m);
+            final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+            screenSize.width += 100;
+            screenSize.height += 100;
+            int xx = screenSize.width - scanner.getGameWidth();
+            int yy = screenSize.height - scanner.getGameHeight();
+            xx /= 2;
+            yy /= 2;
+
+            // SE
+            LOGGER.info("drag SE");
+            mouse.dragFast(m.x - xx, m.y - yy, m.x + xx, m.y + yy, false, false);
+            mouse.delay(200);
+            mouse.mouseMove(scanner.getParkingPoint());
+
+            // try again now
+            p = scanner.scanOneFast("club.bmp", scanner._scanArea, false);
+          }
+
+          if (p != null) {
+            LOGGER.info("Go to club...");
+            mouse.click(p.x, p.y);
+            mouse.delay(3000);
+            dragSE();
+            mouse.delay(1200);
+            checkForMoney();
+            mouse.delay(500);
+            dragW();
+            mouse.delay(1200);
+            checkForMoney();
+            mouse.delay(500);
+            dragN();
+            mouse.delay(1200);
+            checkForMoney();
+            mouse.delay(500);
+            dragE();
+            mouse.delay(1200);
+            checkForMoney();
+            mouse.delay(500);
+            // refresh
+            mouse.delay(500);
+            refresh();
+          }
+
+        } catch (IOException | AWTException e) {
+          e.printStackTrace();
+        }
+
+      }
+
+      private void checkForMoney() throws RobotInterruptedException, IOException, AWTException {
+        Pixel p = null;
+        do {
+          p = scanner.scanOneFast("money.bmp", scanner._scanArea, true);
+          LOGGER.info("money..." + p);
+          if (p != null) {
+            stats.register("Money");
+            mouse.delay(4000);
+          }
+        } while (p != null);
       }
     });
   }
@@ -466,6 +555,57 @@ public class MainFrame extends JFrame {
 
   }
 
+  private void dragSE() throws RobotInterruptedException {
+    drag(1, 1);
+  }
+
+  private void dragW() throws RobotInterruptedException {
+    drag(-1, 0);
+  }
+
+  private void dragN() throws RobotInterruptedException {
+    drag(0, -1);
+  }
+
+  private void dragE() throws RobotInterruptedException {
+    drag(1, 0);
+  }
+
+  private void drag(int ewDir, int nsDir) throws RobotInterruptedException {
+    Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2,
+        scanner.getTopLeft().y + scanner.getGameHeight() / 2);
+    // mouse.mouseMove(m);
+    final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+    screenSize.width += 100;
+    screenSize.height += 100;
+    int xx = screenSize.width - scanner.getGameWidth();
+    int yy = screenSize.height - scanner.getGameHeight();
+    xx /= 2;
+    yy /= 2;
+
+    int x1 = 0;
+    int y1 = 0;
+    int x2 = 0;
+    int y2 = 0;
+    if (ewDir != 0) {
+      x1 = -ewDir;
+      x2 = ewDir;
+    }
+    if (nsDir != 0) {
+      y1 = -nsDir;
+      y2 = nsDir;
+    }
+    if (ewDir != 0 && nsDir != 0) {
+      // both directions
+    }
+
+    // hmm
+    mouse.dragFast(m.x + xx * x1, m.y + yy * y1, m.x + xx * x2, m.y + yy * y2, false, false);
+    mouse.delay(200);
+    mouse.mouseMove(scanner.getParkingPoint());
+
+  }
+
   private void ballTask() {
     ballTask = new Task("BALLS", 1);
     ballTask.setProtocol(new AbstractGameProtocol() {
@@ -474,6 +614,41 @@ public class MainFrame extends JFrame {
       public void reset() {
         super.reset();
         ballsCnt = 0;
+      }
+
+      private void drag(int ewDir, int nsDir) throws RobotInterruptedException {
+        Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2,
+            scanner.getTopLeft().y + scanner.getGameHeight() / 2);
+        // mouse.mouseMove(m);
+        final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        screenSize.width += 100;
+        screenSize.height += 100;
+        int xx = screenSize.width - scanner.getGameWidth();
+        int yy = screenSize.height - scanner.getGameHeight();
+        xx /= 2;
+        yy /= 2;
+
+        int x1 = 0;
+        int y1 = 0;
+        int x2 = 0;
+        int y2 = 0;
+        if (ewDir != 0) {
+          x1 = -ewDir;
+          x2 = ewDir;
+        }
+        if (nsDir != 0) {
+          y1 = -nsDir;
+          y2 = nsDir;
+        }
+        if (ewDir != 0 && nsDir != 0) {
+          // both directions
+        }
+
+        // hmm
+        mouse.dragFast(m.x + xx * x1, m.y + yy * y1, m.x + xx * x2, m.y + yy * y2, false, false);
+        mouse.delay(200);
+        mouse.mouseMove(scanner.getParkingPoint());
+
       }
 
       @Override
@@ -776,7 +951,6 @@ public class MainFrame extends JFrame {
         int mheight = mrows * (slotSize + gap) - gap;
         Rectangle gameArea = new Rectangle(p.x + 308 - 80 - 7 - 80 - 7, p.y + 143, mwidth, mheight);
         int slotsNumber;
-        
 
         do {
           slotsNumber = mrows * mcols;
