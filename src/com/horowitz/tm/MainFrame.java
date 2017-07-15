@@ -69,7 +69,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.23";
+  private static String APP_TITLE = "TM v0.24";
 
   private MouseRobot mouse;
 
@@ -504,6 +504,7 @@ public class MainFrame extends JFrame {
             // refresh
             mouse.delay(500);
             refresh();
+            sleep(15);
           }
 
         } catch (IOException | AWTException e) {
@@ -1063,24 +1064,23 @@ public class MainFrame extends JFrame {
                       slot.image = scanSlot(slot.area);
                       Slot prevSlot = matrix.get(prev);
                       prevSlot.image = scanSlot(prevSlot.area);
-                      // if (prev != null) {
-                      // if (sameImage(prevSlot.image, slot.image)) {
-                      // // we have match, so remove both
-                      // prevSlot.image = null;
-                      // slot.image = null;
-                      // LOGGER.info("UH OH! Time is ticking now");
-                      // time = System.currentTimeMillis();
-                      // }
-                      // }
+                      if (sameImage(prevSlot.image, slot.image)) {
+                        // we have match, so remove both
+                        prevSlot.image = null;
+                        slot.image = null;
+                        LOGGER.info("UH OH! Time is ticking now");
+                        time = System.currentTimeMillis();
+                      }
 
                       if (time != 0) {
                         if (System.currentTimeMillis() - time > 3000) {
 
                           LOGGER.info("click something ... " + (System.currentTimeMillis() - time));
-                          mouse.delay(400);
-                          clickMatches(mcols, mrows, matrix, 1);
-                          time = System.currentTimeMillis();
-                          mouse.delay(200);
+                          mouse.delay(300);
+                          if (clickMatches(mcols, mrows, matrix, 1)) {
+                            time = System.currentTimeMillis();
+                            mouse.delay(200);
+                          }
                         } else {
                           LOGGER.info("wait..." + (System.currentTimeMillis() - time));
                         }
@@ -1134,11 +1134,14 @@ public class MainFrame extends JFrame {
                   if (slot1.active && slot2.active && sameImage(slot1.image, slot2.image)) {
                     clicks++;
                     mouse.click(slot1.area.x, slot1.area.y);
-                    mouse.delay(200);
+                    mouse.delay(140);
                     mouse.click(slot2.area.x, slot2.area.y);
                     mouse.delay(500);
                     slot1.active = false;
                     slot2.active = false;
+
+                    if (maxClicks > 0 && clicks == maxClicks)
+                      return true;
                   }
                 }
               }
@@ -1671,6 +1674,7 @@ public class MainFrame extends JFrame {
             public void run() {
               ((AbstractGameProtocol) ballTask.getProtocol()).reset();
               stats.clear();
+              taskManager.updateAll();
             }
           });
           t.start();
