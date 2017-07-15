@@ -502,9 +502,8 @@ public class MainFrame extends JFrame {
             checkForMoney();
             mouse.delay(500);
             // refresh
-            mouse.delay(500);
-            refresh();
             sleep(15);
+            refresh();
           }
 
         } catch (IOException | AWTException e) {
@@ -1946,7 +1945,7 @@ public class MainFrame extends JFrame {
     }
 
     try {
-      Thread.sleep(12000);
+      Thread.sleep(8000);
     } catch (InterruptedException e) {
     }
 
