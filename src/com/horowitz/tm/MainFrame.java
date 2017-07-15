@@ -502,7 +502,7 @@ public class MainFrame extends JFrame {
             checkForMoney();
             mouse.delay(500);
             // refresh
-            sleep(15);
+            sleep(15 * 60000);
             refresh();
           }
 
@@ -531,12 +531,6 @@ public class MainFrame extends JFrame {
   private void bankTask() {
     bankTask = new Task("BANK", 1);
     bankTask.setProtocol(new AbstractGameProtocol() {
-
-      @Override
-      public void reset() {
-        super.reset();
-        sleep(0);
-      }
 
       @Override
       public void execute() throws RobotInterruptedException, GameErrorException {
@@ -614,41 +608,6 @@ public class MainFrame extends JFrame {
       public void reset() {
         super.reset();
         ballsCnt = 0;
-      }
-
-      private void drag(int ewDir, int nsDir) throws RobotInterruptedException {
-        Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2,
-            scanner.getTopLeft().y + scanner.getGameHeight() / 2);
-        // mouse.mouseMove(m);
-        final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        screenSize.width += 100;
-        screenSize.height += 100;
-        int xx = screenSize.width - scanner.getGameWidth();
-        int yy = screenSize.height - scanner.getGameHeight();
-        xx /= 2;
-        yy /= 2;
-
-        int x1 = 0;
-        int y1 = 0;
-        int x2 = 0;
-        int y2 = 0;
-        if (ewDir != 0) {
-          x1 = -ewDir;
-          x2 = ewDir;
-        }
-        if (nsDir != 0) {
-          y1 = -nsDir;
-          y2 = nsDir;
-        }
-        if (ewDir != 0 && nsDir != 0) {
-          // both directions
-        }
-
-        // hmm
-        mouse.dragFast(m.x + xx * x1, m.y + yy * y1, m.x + xx * x2, m.y + yy * y2, false, false);
-        mouse.delay(200);
-        mouse.mouseMove(scanner.getParkingPoint());
-
       }
 
       @Override
@@ -1619,7 +1578,7 @@ public class MainFrame extends JFrame {
       mainToolbar1.add(action);
     }
 
-    // TEST GO TO MAP
+    // Pairs
     {
 
       AbstractAction action = new AbstractAction("Do Pairs") {
@@ -1640,32 +1599,7 @@ public class MainFrame extends JFrame {
       mainToolbar1.add(action);
     }
 
-    // TEST DO CAMP
-    {
-      AbstractAction action = new AbstractAction("Do Camp") {
-        public void actionPerformed(ActionEvent e) {
-          Thread t = new Thread(new Runnable() {
-            public void run() {
-              // try {
-              // doCamp();
-              // } catch (RobotInterruptedException e) {
-              // e.printStackTrace();
-              // } catch (IOException e) {
-              // e.printStackTrace();
-              // } catch (AWTException e) {
-              // e.printStackTrace();
-              // }
-
-            }
-          });
-          t.start();
-        }
-
-      };
-      mainToolbar1.add(action);
-    }
-
-    // TEST scan energy
+    // Reset
     {
       AbstractAction action = new AbstractAction("Reset") {
         public void actionPerformed(ActionEvent e) {
@@ -1936,6 +1870,7 @@ public class MainFrame extends JFrame {
   }
 
   private void refresh() {
+    LOGGER.info("refresh...");
     mouse.click(scanner.getParkingPoint());
     try {
       Robot robot = new Robot();
@@ -1948,6 +1883,7 @@ public class MainFrame extends JFrame {
       Thread.sleep(8000);
     } catch (InterruptedException e) {
     }
+    LOGGER.info("refresh done");
 
   }
 
