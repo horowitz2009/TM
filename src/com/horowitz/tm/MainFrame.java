@@ -69,7 +69,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.24";
+  private static String APP_TITLE = "TM v0.24aa";
 
   private MouseRobot mouse;
 
@@ -1022,23 +1022,23 @@ public class MainFrame extends JFrame {
                       slot.image = scanSlot(slot.area);
                       Slot prevSlot = matrix.get(prev);
                       prevSlot.image = scanSlot(prevSlot.area);
-                      if (sameImage(prevSlot.image, slot.image)) {
-                        // we have match, so remove both
-                        prevSlot.image = null;
-                        slot.image = null;
-                        LOGGER.info("UH OH! Time is ticking now");
-                        time = System.currentTimeMillis();
-                      }
+                      // if (sameImage(prevSlot.image, slot.image)) {
+                      // // we have match, so remove both
+                      // prevSlot.image = null;
+                      // slot.image = null;
+                      // LOGGER.info("UH OH! Time is ticking now");
+                      // time = System.currentTimeMillis();
+                      // }
 
                       if (time != 0) {
                         if (System.currentTimeMillis() - time > 3000) {
 
                           LOGGER.info("click something ... " + (System.currentTimeMillis() - time));
-                          mouse.delay(300);
-                          if (clickMatches(mcols, mrows, matrix, 1)) {
-                            time = System.currentTimeMillis();
-                            mouse.delay(200);
-                          }
+                          mouse.delay(400);
+                          clickMatches(mcols, mrows, matrix, 1);
+                          time = System.currentTimeMillis();
+                          mouse.delay(200);
+
                         } else {
                           LOGGER.info("wait..." + (System.currentTimeMillis() - time));
                         }
@@ -1092,7 +1092,7 @@ public class MainFrame extends JFrame {
                   if (slot1.active && slot2.active && sameImage(slot1.image, slot2.image)) {
                     clicks++;
                     mouse.click(slot1.area.x, slot1.area.y);
-                    mouse.delay(140);
+                    mouse.delay(200);
                     mouse.click(slot2.area.x, slot2.area.y);
                     mouse.delay(500);
                     slot1.active = false;
