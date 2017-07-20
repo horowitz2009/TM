@@ -163,6 +163,8 @@ public class ScreenScanner {
     _scanArea = new Rectangle(_tl.x + 120, _tl.y + 85, getGameWidth() - 120 - 120, getGameHeight() - 85 - 85);
     _fullArea = new Rectangle(_tl.x, _tl.y + 42, getGameWidth(), getGameHeight() - 42);
     _parkingPoint = new Pixel(_br.x + 2, _tl.x + getGameHeight() / 2);
+    _safePoint = new Pixel(_parkingPoint);
+    
     // _ping2Area = new Rectangle(_tl.x + 120, _tl.y + 19, getGameWidth() - 120
     // - 120, getGameHeight() - 85 - 19);
     // _energyArea = new Rectangle(_tl.x + getGameWidth() / 2 - 18, _tl.y + 21,
