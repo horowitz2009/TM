@@ -69,7 +69,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.25";
+  private static String APP_TITLE = "TM v0.26";
 
   private MouseRobot mouse;
 
@@ -79,6 +79,18 @@ public class MainFrame extends JFrame {
   private SimilarityImageComparator _pairsComparator;
 
   private boolean stopAllThreads;
+
+  private JToggleButton _pingToggle;
+
+  private JToggleButton _slowToggle;
+
+  private JToggleButton _ballsToggle;
+  private JToggleButton _practiceToggle;
+  private JToggleButton _pairsToggle;
+  private JToggleButton _matchesToggle;
+  private JToggleButton _bankToggle;
+  private JToggleButton _clubToggle;
+  private JToggleButton _clubDuelsToggle;
 
   private Task practiceTask;
   private Task sponsorTask;
@@ -250,8 +262,8 @@ public class MainFrame extends JFrame {
 
           try {
             do {
-              scanner.scanOneFast(scanner.getImageData("centerCourt.bmp", scanner._scanArea, 0, 105),
-                  scanner._scanArea, true);
+              scanner.scanOneFast(scanner.getImageData("centerCourt.bmp", scanner._scanArea, 0, 105), scanner._scanArea,
+                  true);
               mouse.delay(3000);
               Pixel p = scanner.scanOneFast("centerCourtTitle.bmp", scanner._scanArea, false);
               if (p != null) {
@@ -456,56 +468,63 @@ public class MainFrame extends JFrame {
       public void execute() throws RobotInterruptedException, GameErrorException {
 
         try {
-          handlePopups();
-          Pixel p = scanner.scanOneFast("club.bmp", scanner._scanArea, false);
-          if (p == null) {
-            // move se
-            Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2,
-                scanner.getTopLeft().y + scanner.getGameHeight() / 2);
-            // mouse.mouseMove(m);
-            final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-            screenSize.width += 100;
-            screenSize.height += 100;
-            int xx = screenSize.width - scanner.getGameWidth();
-            int yy = screenSize.height - scanner.getGameHeight();
-            xx /= 2;
-            yy /= 2;
+          if (_clubToggle.isSelected() || _clubDuelsToggle.isSelected()) {
+            handlePopups();
+            Pixel p = scanner.scanOneFast("club.bmp", scanner._scanArea, false);
+            if (p == null) {
+              // move se
+              Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2,
+                  scanner.getTopLeft().y + scanner.getGameHeight() / 2);
+              // mouse.mouseMove(m);
+              final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+              screenSize.width += 100;
+              screenSize.height += 100;
+              int xx = screenSize.width - scanner.getGameWidth();
+              int yy = screenSize.height - scanner.getGameHeight();
+              xx /= 2;
+              yy /= 2;
 
-            // SE
-            LOGGER.info("drag SE");
-            mouse.dragFast(m.x - xx, m.y - yy, m.x + xx, m.y + yy, false, false);
-            mouse.delay(200);
-            mouse.mouseMove(scanner.getParkingPoint());
+              // SE
+              LOGGER.info("drag SE");
+              mouse.dragFast(m.x - xx, m.y - yy, m.x + xx, m.y + yy, false, false);
+              mouse.delay(200);
+              mouse.mouseMove(scanner.getParkingPoint());
 
-            // try again now
-            p = scanner.scanOneFast("club.bmp", scanner._scanArea, false);
+              // try again now
+              p = scanner.scanOneFast("club.bmp", scanner._scanArea, false);
+            }
+
+            if (p != null) {
+              LOGGER.info("Go to club...");
+              mouse.click(p.x, p.y);
+              mouse.delay(3000);
+              dragSE();
+              mouse.delay(1200);
+              checkForMoney();
+              checkForDuels();
+              mouse.delay(500);
+              dragW();
+              mouse.delay(1200);
+              checkForMoney();
+              checkForDuels();
+              mouse.delay(500);
+              dragN();
+              mouse.delay(1200);
+              checkForMoney();
+              checkForDuels();
+              mouse.delay(500);
+              dragE();
+              mouse.delay(1200);
+              checkForMoney();
+              checkForDuels();
+              mouse.delay(500);
+              
+              clickBankDirectly();
+              // refresh
+              sleep(15 * 60000);
+              refresh();
+            }
           }
-
-          if (p != null) {
-            LOGGER.info("Go to club...");
-            mouse.click(p.x, p.y);
-            mouse.delay(3000);
-            dragSE();
-            mouse.delay(1200);
-            checkForMoney();
-            mouse.delay(500);
-            dragW();
-            mouse.delay(1200);
-            checkForMoney();
-            mouse.delay(500);
-            dragN();
-            mouse.delay(1200);
-            checkForMoney();
-            mouse.delay(500);
-            dragE();
-            mouse.delay(1200);
-            checkForMoney();
-            mouse.delay(500);
-            // refresh
-            sleep(15 * 60000);
-            refresh();
-          }
-
         } catch (IOException | AWTException e) {
           e.printStackTrace();
         }
@@ -513,15 +532,31 @@ public class MainFrame extends JFrame {
       }
 
       private void checkForMoney() throws RobotInterruptedException, IOException, AWTException {
-        Pixel p = null;
-        do {
-          p = scanner.scanOneFast("money.bmp", scanner._scanArea, true);
-          LOGGER.info("money..." + p);
-          if (p != null) {
-            stats.register("Money");
-            mouse.delay(4000);
-          }
-        } while (p != null);
+        if (_clubToggle.isSelected()) {
+          Pixel p = null;
+          do {
+            p = scanner.scanOneFast("money.bmp", scanner._scanArea, true);
+            LOGGER.info("money..." + p);
+            if (p != null) {
+              stats.register("Money");
+              mouse.delay(4000);
+            }
+          } while (p != null);
+        }
+      }
+      
+      private void checkForDuels() throws RobotInterruptedException, IOException, AWTException {
+        if (_clubDuelsToggle.isSelected()) {
+          Pixel p = null;
+          do {
+            p = scanner.scanOneFast(scanner.getImageData("clubDuels.bmp", scanner._scanArea, 9, 17), scanner._scanArea, true);
+            LOGGER.info("money..." + p);
+            if (p != null) {
+              stats.register("Money");
+              mouse.delay(4000);
+            }
+          } while (p != null);
+        }
       }
     });
   }
@@ -1407,16 +1442,6 @@ public class MainFrame extends JFrame {
     return panel;
   }
 
-  private JToggleButton _pingToggle;
-
-  private JToggleButton _slowToggle;
-
-  private JToggleButton _ballsToggle;
-  private JToggleButton _practiceToggle;
-  private JToggleButton _pairsToggle;
-  private JToggleButton _matchesToggle;
-  private JToggleButton _bankToggle;
-
   private CaptureDialog captureDialog;
 
   private Container buildConsole() {
@@ -1474,7 +1499,7 @@ public class MainFrame extends JFrame {
     toolbar.setFloatable(false);
 
     // Balls
-    _ballsToggle = new JToggleButton("Balls");
+    _ballsToggle = new JToggleButton("B");
     toolbar.add(_ballsToggle);
     _ballsToggle.addItemListener(new ItemListener() {
       @Override
@@ -1488,7 +1513,7 @@ public class MainFrame extends JFrame {
     });
 
     // Practice
-    _practiceToggle = new JToggleButton("Practice");
+    _practiceToggle = new JToggleButton("Pr");
     toolbar.add(_practiceToggle);
     _practiceToggle.addItemListener(new ItemListener() {
       @Override
@@ -1538,6 +1563,35 @@ public class MainFrame extends JFrame {
         boolean b = e.getStateChange() == ItemEvent.SELECTED;
         LOGGER.info("Bank: " + (b ? "on" : "off"));
         settings.setProperty("tasks.bank", "" + b);
+        settings.saveSettingsSorted();
+
+      }
+    });
+
+    // Club
+    _clubToggle = new JToggleButton("Cl M");
+    toolbar.add(_clubToggle);
+
+    _clubToggle.addItemListener(new ItemListener() {
+      @Override
+      public void itemStateChanged(ItemEvent e) {
+        boolean b = e.getStateChange() == ItemEvent.SELECTED;
+        LOGGER.info("Club Money: " + (b ? "on" : "off"));
+        settings.setProperty("tasks.club.money", "" + b);
+        settings.saveSettingsSorted();
+
+      }
+    });
+    // Club
+    _clubDuelsToggle = new JToggleButton("Cl D");
+    toolbar.add(_clubDuelsToggle);
+
+    _clubDuelsToggle.addItemListener(new ItemListener() {
+      @Override
+      public void itemStateChanged(ItemEvent e) {
+        boolean b = e.getStateChange() == ItemEvent.SELECTED;
+        LOGGER.info("Club Money: " + (b ? "on" : "off"));
+        settings.setProperty("tasks.club.duels", "" + b);
         settings.saveSettingsSorted();
 
       }
@@ -2079,6 +2133,16 @@ public class MainFrame extends JFrame {
     boolean bank = "true".equalsIgnoreCase(settings.getProperty("tasks.bank"));
     if (bank != _bankToggle.isSelected()) {
       _bankToggle.setSelected(bank);
+    }
+
+    boolean clubM = "true".equalsIgnoreCase(settings.getProperty("tasks.club.money"));
+    if (clubM != _clubToggle.isSelected()) {
+      _clubToggle.setSelected(bank);
+    }
+
+    boolean clubD = "true".equalsIgnoreCase(settings.getProperty("tasks.club.duels"));
+    if (clubD != _clubDuelsToggle.isSelected()) {
+      _clubDuelsToggle.setSelected(bank);
     }
 
     //
