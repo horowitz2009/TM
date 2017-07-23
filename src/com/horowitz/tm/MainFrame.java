@@ -29,6 +29,7 @@ import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -69,7 +70,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.26";
+  private static String APP_TITLE = "TM v0.27";
 
   private MouseRobot mouse;
 
@@ -518,7 +519,7 @@ public class MainFrame extends JFrame {
               checkForMoney();
               checkForDuels();
               mouse.delay(500);
-              
+
               clickBankDirectly();
               // refresh
               sleep(15 * 60000);
@@ -544,12 +545,13 @@ public class MainFrame extends JFrame {
           } while (p != null);
         }
       }
-      
+
       private void checkForDuels() throws RobotInterruptedException, IOException, AWTException {
         if (_clubDuelsToggle.isSelected()) {
           Pixel p = null;
           do {
-            p = scanner.scanOneFast(scanner.getImageData("clubDuels.bmp", scanner._scanArea, 9, 17), scanner._scanArea, true);
+            p = scanner.scanOneFast(scanner.getImageData("clubDuels.bmp", scanner._scanArea, 9, 17), scanner._scanArea,
+                true);
             LOGGER.info("duels..." + p);
             if (p != null) {
               stats.register("Duels");
@@ -832,6 +834,12 @@ public class MainFrame extends JFrame {
 
     private boolean done = false;
     private long time = 0l;
+    private int pairsScanned = 0;
+    private Map<Coords, Slot> matrix;
+    private int mcols;
+    private int mrows;
+    private List<Slot[]> matches;
+    private List<Slot> scanned;
 
     @Override
     public void execute() throws RobotInterruptedException, GameErrorException {
@@ -939,8 +947,8 @@ public class MainFrame extends JFrame {
         // good
         int slotSize = 80;
         int gap = 7;
-        int mcols = 8;
-        int mrows = 4;
+        mcols = 8;
+        mrows = 4;
         int mwidth = mcols * (slotSize + gap) - gap;
         int mheight = mrows * (slotSize + gap) - gap;
         Rectangle gameArea = new Rectangle(p.x + 308 - 80 - 7 - 80 - 7, p.y + 143, mwidth, mheight);
@@ -950,12 +958,12 @@ public class MainFrame extends JFrame {
           try {
             slotsNumber = mrows * mcols;
             done = false;
+            matrix = new HashMap<Coords, Slot>();
 
             // CREATE THREAD
             final Thread t = createThread(pp);
+            //final Thread ts = createThread2(pp);
 
-            // PREPARE MATRIX
-            Map<Coords, Slot> matrix = new HashMap<Coords, Slot>();
             for (int row = 1; row <= mrows; row++) {
               for (int col = 1; col <= mcols; col++) {
                 Slot slot = new Slot(row, col, true);
@@ -984,7 +992,7 @@ public class MainFrame extends JFrame {
             boolean first = true;
             Coords prev = null;
             Coords openSlot = null;
-            
+
             // ODD number check
             if ((slotsNumber % 2) != 0) {
               LOGGER.info("ODD NUMBER OF SLOTS");
@@ -1016,18 +1024,24 @@ public class MainFrame extends JFrame {
               }
             }
 
+            matches = new ArrayList<>(slotsNumber / 2);
+            // scanned = Collections.synchronizedList(new
+            // ArrayList<Slot>(slotsNumber));//TODO sync?
+            scanned = new ArrayList<Slot>(slotsNumber);
+
             // HIT IT!
-            
+            boolean once = true;
+
             LOGGER.info("Slots: " + slotsNumber);
 
             if (slotsNumber > 0) {
               t.start();
-
+              pairsScanned = 0;
               for (int row = 1; row <= mrows; row++) {
                 for (int col = 1; col <= mcols; col++) {
                   Coords coords = new Coords(row, col);
-                  Slot slot = matrix.get(coords);
-                  
+                  final Slot slot = matrix.get(coords);
+
                   if (openSlot != null && coords.equals(openSlot)) {
                     LOGGER.info("openslot...");
 
@@ -1039,9 +1053,34 @@ public class MainFrame extends JFrame {
                         mouse.delay(140);
                       } else {
                         mouse.delay(600);
-                        Slot prevSlot = matrix.get(prev);
+                        final Slot prevSlot = matrix.get(prev);
                         slot.image = scanSlot(slot.area);
                         prevSlot.image = scanSlot(prevSlot.area);
+                        pairsScanned++;
+                        addToScanned(prevSlot, slot);
+                        new Thread(new Runnable() {
+                          public void run() {
+                            try {
+                              Thread.sleep(750);
+                              if (PairsTools.areMatching(slot.area, prevSlot.area)) {
+                                prevSlot.active = false;
+                                slot.active = false;
+                                // scanned.remove(prevSlot);
+                                // scanned.remove(slot);
+                                time = System.currentTimeMillis() - 1000;
+                                LOGGER.info("MATCH!!!");
+                              }
+                            } catch (Exception e) {
+                              e.printStackTrace();
+                            }
+
+                          }
+                        }).start();
+                        // if (settings.getBoolean("debug", false) && once) {
+                        // // debug mf
+                        // once = false;
+                        // captureSlots(prevSlot, slot);
+                        // }
                         // if (sameImage(prevSlot.image, slot.image)) {
                         // // we have match, so remove both
                         // prevSlot.image = null;
@@ -1051,16 +1090,21 @@ public class MainFrame extends JFrame {
                         // }
 
                         if (time != 0) {
-                          if (System.currentTimeMillis() - time > 3000) {
-
+                          if (System.currentTimeMillis() - time > 3000 && !matches.isEmpty()) {
                             LOGGER.info("click something ... " + (System.currentTimeMillis() - time));
-                            mouse.delay(400);
-                            clickMatches(mcols, mrows, matrix, 1);
-                            time = System.currentTimeMillis();
-                            mouse.delay(200);
 
+                            Slot[] slots = matches.get(0);
+                            mouse.click(slots[0].area.x, slots[0].area.y);
+                            mouse.delay(100);
+                            mouse.click(slots[1].area.x, slots[1].area.y);
+                            mouse.delay(400);
+                            slots[0].active = false;
+                            slots[1].active = false;
+                            matches.remove(0);
                           } else {
                             LOGGER.info("wait..." + (System.currentTimeMillis() - time));
+                            if (matches.isEmpty())
+                              LOGGER.info("no matches yet :(");
                           }
                         }
 
@@ -1082,6 +1126,9 @@ public class MainFrame extends JFrame {
 
               mouse.delay(2000);
             }
+          } catch (RobotInterruptedException re) {
+            slotsNumber = 0;
+            LOGGER.info("interrupted");
           } catch (Exception e) {
             LOGGER.info("WHAT HAPPENED? " + e.getMessage());
           }
@@ -1091,6 +1138,43 @@ public class MainFrame extends JFrame {
       }
 
       return started;
+    }
+
+    private void addToScanned(Slot slot1, Slot slot2) {
+      //long start = System.currentTimeMillis();
+      // find matches
+      List<Slot> toRemove = new ArrayList<>();
+      boolean sl1Match = false;
+      boolean sl2Match = false;
+      for (int i = 0; i < scanned.size(); i++) {
+        Slot sl = scanned.get(i);
+        if (sl.active) {
+          if (slot1.active && sameImage(sl.image, slot1.image)) {
+            // found a match
+            matches.add(new Slot[] { sl, slot1 });
+            toRemove.add(sl);
+            sl1Match = true;
+          } else if (slot2.active && sameImage(sl.image, slot2.image)) {
+            // found a match
+            matches.add(new Slot[] { sl, slot2 });
+            toRemove.add(sl);
+            sl2Match = true;
+          }
+        }
+      }
+
+      for (Slot slot : toRemove) {
+        scanned.remove(slot);
+      }
+
+      if (!sl1Match)
+        scanned.add(slot1);
+      if (!sl2Match)
+        scanned.add(slot2);
+      
+      LOGGER.info("matches: " + matches.size());
+      //LOGGER.info("time: " + (System.currentTimeMillis() - start));
+      
     }
 
     private Thread createThread(final Pixel pp) {
@@ -1111,6 +1195,39 @@ public class MainFrame extends JFrame {
               Thread.sleep(100);
             } while (!done && System.currentTimeMillis() - threadTime < 90 * 1000);
             LOGGER.info("T DONE");
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+        }
+      });
+    }
+
+    private Thread createThread2(final Pixel pp) {
+      return new Thread(new Runnable() {
+        public void run() {
+          try {
+            for (int row1 = 1; row1 <= mrows; row1++) {
+              for (int col1 = 1; col1 <= mcols; col1++) {
+
+                for (int row2 = 1; row2 <= mrows; row2++) {
+                  for (int col2 = 1; col2 <= mcols; col2++) {
+
+                    Coords c1 = new Coords(row1, col1);
+                    Coords c2 = new Coords(row2, col2);
+                    // System.err.println(c1 + " - " + c2);
+                    if (!c1.equals(c2)) {
+                      Slot slot1 = matrix.get(c1);
+                      Slot slot2 = matrix.get(c2);
+                      if (slot1.active && slot2.active && sameImage(slot1.image, slot2.image)) {
+                        matches.add(new Slot[] { slot1, slot2 });
+                      }
+                    }
+                  }
+                }
+              }
+            }
+
+            LOGGER.info("matches: " + matches.size());
           } catch (Exception e) {
             e.printStackTrace();
           }
@@ -1142,7 +1259,12 @@ public class MainFrame extends JFrame {
                     mouse.click(slot1.area.x, slot1.area.y);
                     mouse.delay(200);
                     mouse.click(slot2.area.x, slot2.area.y);
-                    mouse.delay(500);
+
+                    if (settings.getBoolean("debug", false)) {
+                      // debug mf
+                      captureSlots2(slot1, slot2);
+                    } else
+                      mouse.delay(500);
                     slot1.active = false;
                     slot2.active = false;
 
@@ -1158,6 +1280,57 @@ public class MainFrame extends JFrame {
       return clicks > 0;
     }
 
+    private void captureSlots2(Slot slot1, Slot slot2) {
+      try {
+
+        Robot robot = new Robot();
+        mouse.delay(1350);
+        scanner.writeImage(robot.createScreenCapture(slot1.area), "slot1_" + System.currentTimeMillis() + ".bmp");
+        scanner.writeImage(robot.createScreenCapture(slot2.area), "slot2_" + System.currentTimeMillis() + ".bmp");
+
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+
+    }
+
+    private void captureSlots(Slot slot1, Slot slot2) {
+      try {
+        final List<BufferedImage> images1 = new ArrayList<>();
+        final List<BufferedImage> images2 = new ArrayList<>();
+        final List<Long> time = new ArrayList<>();
+        int mi = 100;
+        Robot robot = new Robot();
+        LOGGER.info("start capturing...");
+        for (int i = 0; i < mi; i++) {
+          images1.add(robot.createScreenCapture(slot1.area));
+          images2.add(robot.createScreenCapture(slot2.area));
+          time.add(System.currentTimeMillis());
+          // Thread.sleep(10);
+        }
+        LOGGER.info("done");
+        new Thread(new Runnable() {
+          public void run() {
+            LOGGER.info("saving ...");
+            int i = 1;
+            long t = time.get(0);
+            for (BufferedImage bi : images2) {
+              scanner.writeImage(bi, "slot2_" + i + "_" + (time.get(i - 1) - t) + ".bmp");
+              i++;
+            }
+            i = 1;
+            for (BufferedImage bi : images1) {
+              scanner.writeImage(bi, "slot1_" + i++ + ".bmp");
+            }
+            LOGGER.info("save done");
+          }
+        }).start();
+
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+
   }
 
   private static class Slot {
@@ -1171,6 +1344,34 @@ public class MainFrame extends JFrame {
       coords = new Coords(row, col);
       this.active = active;
       this.image = null;
+    }
+
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + (active ? 1231 : 1237);
+      result = prime * result + ((coords == null) ? 0 : coords.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj)
+        return true;
+      if (obj == null)
+        return false;
+      if (getClass() != obj.getClass())
+        return false;
+      Slot other = (Slot) obj;
+      if (active != other.active)
+        return false;
+      if (coords == null) {
+        if (other.coords != null)
+          return false;
+      } else if (!coords.equals(other.coords))
+        return false;
+      return true;
     }
 
   }
