@@ -1101,6 +1101,7 @@ public class MainFrame extends JFrame {
                             slots[0].active = false;
                             slots[1].active = false;
                             matches.remove(0);
+                            time = System.currentTimeMillis();
                           } else {
                             LOGGER.info("wait..." + (System.currentTimeMillis() - time));
                             if (matches.isEmpty())
