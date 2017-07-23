@@ -550,9 +550,9 @@ public class MainFrame extends JFrame {
           Pixel p = null;
           do {
             p = scanner.scanOneFast(scanner.getImageData("clubDuels.bmp", scanner._scanArea, 9, 17), scanner._scanArea, true);
-            LOGGER.info("money..." + p);
+            LOGGER.info("duels..." + p);
             if (p != null) {
-              stats.register("Money");
+              stats.register("Duels");
               mouse.delay(4000);
             }
           } while (p != null);
@@ -952,30 +952,9 @@ public class MainFrame extends JFrame {
             done = false;
 
             // CREATE THREAD
-            Thread t = new Thread(new Runnable() {
-              public void run() {
-                try {
-                  long threadTime = System.currentTimeMillis();
-                  do {
+            final Thread t = createThread(pp);
 
-                    Rectangle clockArea = new Rectangle(pp.x + 857 + 34, pp.y + 499 + 35, 15, 24);
-                    BufferedImage multiplier = scanSlot(clockArea);
-                    if (!sameImage(scanner.getImageData("MultiplierZero.bmp").getImage(), multiplier)) {
-                      if (time == 0) {
-                        time = System.currentTimeMillis();
-                        LOGGER.info("UH OH...");
-                      }
-                    }
-                    Thread.sleep(100);
-                  } while (!done && System.currentTimeMillis() - threadTime < 90 * 1000);
-                  LOGGER.info("T DONE");
-                } catch (Exception e) {
-                  e.printStackTrace();
-                }
-              }
-            });
-
-            // MATRIX
+            // PREPARE MATRIX
             Map<Coords, Slot> matrix = new HashMap<Coords, Slot>();
             for (int row = 1; row <= mrows; row++) {
               for (int col = 1; col <= mcols; col++) {
@@ -987,6 +966,7 @@ public class MainFrame extends JFrame {
               }
             }
 
+            // INITIAL SCAN
             for (int row = 1; row <= mrows; row++) {
               for (int col = 1; col <= mcols; col++) {
                 Slot slot = matrix.get(new Coords(row, col));
@@ -1004,6 +984,7 @@ public class MainFrame extends JFrame {
             boolean first = true;
             Coords prev = null;
             Coords openSlot = null;
+            
             // ODD number check
             if ((slotsNumber % 2) != 0) {
               LOGGER.info("ODD NUMBER OF SLOTS");
@@ -1035,6 +1016,8 @@ public class MainFrame extends JFrame {
               }
             }
 
+            // HIT IT!
+            
             LOGGER.info("Slots: " + slotsNumber);
 
             if (slotsNumber > 0) {
@@ -1044,6 +1027,7 @@ public class MainFrame extends JFrame {
                 for (int col = 1; col <= mcols; col++) {
                   Coords coords = new Coords(row, col);
                   Slot slot = matrix.get(coords);
+                  
                   if (openSlot != null && coords.equals(openSlot)) {
                     LOGGER.info("openslot...");
 
@@ -1055,8 +1039,8 @@ public class MainFrame extends JFrame {
                         mouse.delay(140);
                       } else {
                         mouse.delay(600);
-                        slot.image = scanSlot(slot.area);
                         Slot prevSlot = matrix.get(prev);
+                        slot.image = scanSlot(slot.area);
                         prevSlot.image = scanSlot(prevSlot.area);
                         // if (sameImage(prevSlot.image, slot.image)) {
                         // // we have match, so remove both
@@ -1107,6 +1091,31 @@ public class MainFrame extends JFrame {
       }
 
       return started;
+    }
+
+    private Thread createThread(final Pixel pp) {
+      return new Thread(new Runnable() {
+        public void run() {
+          try {
+            long threadTime = System.currentTimeMillis();
+            do {
+
+              Rectangle clockArea = new Rectangle(pp.x + 857 + 34, pp.y + 499 + 35, 15, 24);
+              BufferedImage multiplier = scanSlot(clockArea);
+              if (!sameImage(scanner.getImageData("MultiplierZero.bmp").getImage(), multiplier)) {
+                if (time == 0) {
+                  time = System.currentTimeMillis();
+                  LOGGER.info("UH OH...");
+                }
+              }
+              Thread.sleep(100);
+            } while (!done && System.currentTimeMillis() - threadTime < 90 * 1000);
+            LOGGER.info("T DONE");
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+        }
+      });
     }
 
     private boolean clickMatches(int mcols, int mrows, Map<Coords, Slot> matrix, int maxClicks)
