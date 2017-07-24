@@ -962,7 +962,7 @@ public class MainFrame extends JFrame {
 
             // CREATE THREAD
             final Thread t = createThread(pp);
-            //final Thread ts = createThread2(pp);
+            // final Thread ts = createThread2(pp);
 
             for (int row = 1; row <= mrows; row++) {
               for (int col = 1; col <= mcols; col++) {
@@ -1092,12 +1092,17 @@ public class MainFrame extends JFrame {
                         if (time != 0) {
                           if (System.currentTimeMillis() - time > 3000 && !matches.isEmpty()) {
                             LOGGER.info("click something ... " + (System.currentTimeMillis() - time));
-
+                            // mouse.delay(400);
                             Slot[] slots = matches.get(0);
+                            if (slots[0].coords.equals(prevSlot.coords) || slots[0].coords.equals(slot.coords)
+                                || slots[1].coords.equals(prevSlot.coords) || slots[1].coords.equals(slot.coords)) {
+                              LOGGER.info("hmm. wait a bit more...");
+                              mouse.delay(500);
+                            }
                             mouse.click(slots[0].area.x, slots[0].area.y);
-                            mouse.delay(100);
+                            mouse.delay(200);
                             mouse.click(slots[1].area.x, slots[1].area.y);
-                            mouse.delay(400);
+                            mouse.delay(600);
                             slots[0].active = false;
                             slots[1].active = false;
                             matches.remove(0);
@@ -1142,7 +1147,7 @@ public class MainFrame extends JFrame {
     }
 
     private void addToScanned(Slot slot1, Slot slot2) {
-      //long start = System.currentTimeMillis();
+      // long start = System.currentTimeMillis();
       // find matches
       List<Slot> toRemove = new ArrayList<>();
       boolean sl1Match = false;
@@ -1172,10 +1177,10 @@ public class MainFrame extends JFrame {
         scanned.add(slot1);
       if (!sl2Match)
         scanned.add(slot2);
-      
+
       LOGGER.info("matches: " + matches.size());
-      //LOGGER.info("time: " + (System.currentTimeMillis() - start));
-      
+      // LOGGER.info("time: " + (System.currentTimeMillis() - start));
+
     }
 
     private Thread createThread(final Pixel pp) {
