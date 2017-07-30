@@ -70,7 +70,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.27";
+  private static String APP_TITLE = "TM v0.27c";
 
   private MouseRobot mouse;
 
@@ -263,8 +263,8 @@ public class MainFrame extends JFrame {
 
           try {
             do {
-              scanner.scanOneFast(scanner.getImageData("centerCourt.bmp", scanner._scanArea, 0, 105), scanner._scanArea,
-                  true);
+              scanner.scanOneFast(scanner.getImageData("centerCourt.bmp", scanner._scanArea, 0, 105),
+                  scanner._scanArea, true);
               mouse.delay(3000);
               Pixel p = scanner.scanOneFast("centerCourtTitle.bmp", scanner._scanArea, false);
               if (p != null) {
@@ -474,12 +474,12 @@ public class MainFrame extends JFrame {
             Pixel p = scanner.scanOneFast("club.bmp", scanner._scanArea, false);
             if (p == null) {
               // move se
-              Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2,
-                  scanner.getTopLeft().y + scanner.getGameHeight() / 2);
+              Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2, scanner.getTopLeft().y
+                  + scanner.getGameHeight() / 2);
               // mouse.mouseMove(m);
               final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-              screenSize.width += 100;
-              screenSize.height += 100;
+              screenSize.width = 1920 + 100;
+              screenSize.height = 1080 + 100;
               int xx = screenSize.width - scanner.getGameWidth();
               int yy = screenSize.height - scanner.getGameHeight();
               xx /= 2;
@@ -603,12 +603,12 @@ public class MainFrame extends JFrame {
   }
 
   private void drag(int ewDir, int nsDir) throws RobotInterruptedException {
-    Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2,
-        scanner.getTopLeft().y + scanner.getGameHeight() / 2);
+    Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2, scanner.getTopLeft().y
+        + scanner.getGameHeight() / 2);
     // mouse.mouseMove(m);
-    final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-    screenSize.width += 100;
-    screenSize.height += 100;
+    final Dimension screenSize = new Dimension();
+    screenSize.width = 1920 + 100;
+    screenSize.height = 1080 + 100;
     int xx = screenSize.width - scanner.getGameWidth();
     int yy = screenSize.height - scanner.getGameHeight();
     xx /= 2;
@@ -661,12 +661,12 @@ public class MainFrame extends JFrame {
               mouse.delay(100);
               if (move) {
                 // move approach
-                Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2,
-                    scanner.getTopLeft().y + scanner.getGameHeight() / 2);
+                Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2, scanner.getTopLeft().y
+                    + scanner.getGameHeight() / 2);
                 // mouse.mouseMove(m);
                 final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-                screenSize.width += 100;
-                screenSize.height += 100;
+                screenSize.width = 1920 + 100;
+                screenSize.height = 1080 + 100;
                 int xx = screenSize.width - scanner.getGameWidth();
                 int yy = screenSize.height - scanner.getGameHeight();
                 xx /= 2;
@@ -967,8 +967,8 @@ public class MainFrame extends JFrame {
             for (int row = 1; row <= mrows; row++) {
               for (int col = 1; col <= mcols; col++) {
                 Slot slot = new Slot(row, col, true);
-                Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gap) + 20,
-                    gameArea.y + (row - 1) * (slotSize + gap) + 20, 40, 40);
+                Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gap) + 20, gameArea.y
+                    + (row - 1) * (slotSize + gap) + 20, 40, 40);
                 slot.area = slotArea;
                 matrix.put(slot.coords, slot);
               }
