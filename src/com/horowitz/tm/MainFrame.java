@@ -212,12 +212,16 @@ public class MainFrame extends JFrame {
           handlePopups();
 
           try {
-            mouse.delay(1000);
+            mouse.delay(500);
             // check duels here
             int x = scanner.getTopLeft().x + scanner.getGameWidth() / 2;
             int y = scanner.getTopLeft().y + 20;
             mouse.mouseMove(x, y);
-            mouse.delay(3000);
+            
+            Rectangle area = new Rectangle(x-52,y - 8,80,13);
+            scanner.writeArea(area, "duels.bmp");
+            
+            mouse.delay(1500);
             Pixel p = scanner.scanOne("DuelsClock.bmp", new Rectangle(x - 70, y, 140, 67), false);
             if (p == null) {
               LOGGER.info("DUELS FULL");
