@@ -54,6 +54,7 @@ import javax.swing.JToolBar;
 
 import com.horowitz.commons.DateUtils;
 import com.horowitz.commons.GameErrorException;
+import com.horowitz.commons.ImageData;
 import com.horowitz.commons.MouseRobot;
 import com.horowitz.commons.MyImageIO;
 import com.horowitz.commons.MyLogger;
@@ -70,7 +71,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.27c";
+  private static String APP_TITLE = "TM v0.28";
 
   private MouseRobot mouse;
 
@@ -86,6 +87,7 @@ public class MainFrame extends JFrame {
   private JToggleButton _slowToggle;
 
   private JToggleButton _ballsToggle;
+  private JToggleButton _sponsorsToggle;
   private JToggleButton _practiceToggle;
   private JToggleButton _pairsToggle;
   private JToggleButton _matchesToggle;
@@ -230,10 +232,32 @@ public class MainFrame extends JFrame {
             int x = scanner.getTopLeft().x + scanner.getGameWidth() / 2;
             int y = scanner.getTopLeft().y + 20;
             mouse.mouseMove(x, y);
-            
-            Rectangle area = new Rectangle(x-52,y - 8,80,13);
-            scanner.writeArea(area, "duels.bmp");
-            
+
+            Rectangle area = new Rectangle(x - 52, y - 8, 80, 13);
+            // scanner.writeArea(area, "duels.bmp");
+            //
+            // public Pixel scanOne(ImageData imageData, Rectangle area, boolean
+            // click, Color colorToBypass, boolean bwMode)
+            // public Pixel scanOneFast(ImageData imageData, Rectangle area,
+            // boolean click, boolean bwMode) throws AWTException,
+            int dmin = 18;
+            int dmax = 21;
+            int duel = dmin;
+            boolean found = false;
+
+            for (; duel <= dmax; duel++) {
+              Pixel ppp = scanner.scanOneFast(scanner.getImageData("duels" + duel + ".bmp"), area, false, true);
+              if (ppp != null) {
+                found = true;
+                break;
+              }
+            }
+            if (found) {
+              LOGGER.info("DUELS " + duel);
+              duelsFull = true;
+              ((AbstractGameProtocol) matchTask.getProtocol()).sleep(0);
+              return;// skip the rest
+            }
             mouse.delay(1500);
             Pixel p = scanner.scanOne("DuelsClock.bmp", new Rectangle(x - 70, y, 140, 67), false);
             if (p == null) {
@@ -242,7 +266,7 @@ public class MainFrame extends JFrame {
               ((AbstractGameProtocol) matchTask.getProtocol()).sleep(0);
             } else
               duelsFull = false;
-            mouse.delay(3000);
+            mouse.delay(100);
           } catch (IOException e) {
             e.printStackTrace();
           } catch (AWTException e) {
@@ -438,28 +462,28 @@ public class MainFrame extends JFrame {
 
       @Override
       public void execute() throws RobotInterruptedException, GameErrorException {
-
-        try {
-          Pixel p = scanner.scanOneFast("sponsor.bmp", scanner._scanArea, false);
-          if (p != null) {
-            mouse.click(p.x + 6, p.y + 6);
-            mouse.delay(3000);
-            p = scanner.scanOneFast("Rocky.bmp", scanner._scanArea, false);
+        if (_sponsorsToggle.isSelected())
+          try {
+            Pixel p = scanner.scanOneFast("sponsor.bmp", scanner._scanArea, false);
             if (p != null) {
-              LOGGER.info("sponsor opened");
-              mouse.click(p.x, p.y + 303);
-              mouse.delay(500);
-              mouse.click(p.x + 357, p.y + 303);
-              mouse.delay(2500);
-              LOGGER.info("sleep 5min");
-              sleep(5 * 60000);
-              handlePopups();
+              mouse.click(p.x + 6, p.y + 6);
+              mouse.delay(3000);
+              p = scanner.scanOneFast("Rocky.bmp", scanner._scanArea, false);
+              if (p != null) {
+                LOGGER.info("sponsor opened");
+                mouse.click(p.x, p.y + 303);
+                mouse.delay(3500);
+                mouse.click(p.x + 357, p.y + 303);
+                mouse.delay(3000);
+                LOGGER.info("sleep 2min");
+                sleep(2 * 60000);
+                handlePopups();
+              }
             }
-          }
 
-        } catch (IOException | AWTException e) {
-          e.printStackTrace();
-        }
+          } catch (IOException | AWTException e) {
+            e.printStackTrace();
+          }
 
       }
     });
@@ -1732,6 +1756,20 @@ public class MainFrame extends JFrame {
       }
     });
 
+    // Balls
+    _sponsorsToggle = new JToggleButton("S");
+    toolbar.add(_sponsorsToggle);
+    _sponsorsToggle.addItemListener(new ItemListener() {
+      @Override
+      public void itemStateChanged(ItemEvent e) {
+        boolean b = e.getStateChange() == ItemEvent.SELECTED;
+        LOGGER.info("Sponsors: " + (b ? "on" : "off"));
+        settings.setProperty("tasks.sponsors", "" + b);
+        settings.saveSettingsSorted();
+
+      }
+    });
+
     // Practice
     _practiceToggle = new JToggleButton("Pr");
     toolbar.add(_practiceToggle);
@@ -1759,7 +1797,7 @@ public class MainFrame extends JFrame {
     });
 
     // Matches
-    _matchesToggle = new JToggleButton("Matches");
+    _matchesToggle = new JToggleButton("M");
     toolbar.add(_matchesToggle);
 
     _matchesToggle.addItemListener(new ItemListener() {
@@ -2333,6 +2371,11 @@ public class MainFrame extends JFrame {
     boolean balls = "true".equalsIgnoreCase(settings.getProperty("tasks.balls"));
     if (balls != _ballsToggle.isSelected()) {
       _ballsToggle.setSelected(balls);
+    }
+
+    boolean sponsors = "true".equalsIgnoreCase(settings.getProperty("tasks.sponsors"));
+    if (sponsors != _sponsorsToggle.isSelected()) {
+      _sponsorsToggle.setSelected(sponsors);
     }
 
     boolean practice = "true".equalsIgnoreCase(settings.getProperty("tasks.practice"));

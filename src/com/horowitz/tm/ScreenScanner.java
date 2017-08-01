@@ -27,6 +27,7 @@ import Catalano.Core.IntRange;
 import Catalano.Imaging.FastBitmap;
 import Catalano.Imaging.Filters.ColorFiltering;
 
+import com.horowitz.commons.BaseScreenScanner;
 import com.horowitz.commons.GameLocator;
 import com.horowitz.commons.ImageComparator;
 import com.horowitz.commons.ImageData;
@@ -40,7 +41,7 @@ import com.horowitz.commons.Settings;
 import com.horowitz.commons.SimilarityImageComparator;
 import com.horowitz.commons.TemplateMatcher;
 
-public class ScreenScanner {
+public class ScreenScanner extends BaseScreenScanner {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
@@ -119,6 +120,7 @@ public class ScreenScanner {
   }
 
   public ScreenScanner(Settings settings) {
+    super(settings);
     _comparator = new SimilarityImageComparator(0.04, 2000);
     _matcher = new TemplateMatcher();
     // _matcher.setSimilarityThreshold(.91d);
