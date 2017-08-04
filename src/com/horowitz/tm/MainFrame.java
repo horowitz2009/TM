@@ -71,7 +71,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.28f";
+  private static String APP_TITLE = "TM v0.28ff";
 
   private MouseRobot mouse;
 
@@ -258,8 +258,8 @@ public class MainFrame extends JFrame {
               ((AbstractGameProtocol) matchTask.getProtocol()).sleep(0);
               return;// skip the rest
             }
-            mouse.delay(1500);
-            Pixel p = scanner.scanOne("DuelsClock.bmp", new Rectangle(x - 70, y, 140, 67), false);
+            mouse.delay(2000);
+            Pixel p = scanner.scanOneFast("DuelsClock.bmp", new Rectangle(x - 70, y, 140, 67), false);
             if (p == null) {
               LOGGER.info("DUELS FULL");
               duelsFull = true;
