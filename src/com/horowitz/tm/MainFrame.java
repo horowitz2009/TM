@@ -71,7 +71,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.28h";
+  private static String APP_TITLE = "TM v0.28f";
 
   private MouseRobot mouse;
 
@@ -246,7 +246,7 @@ public class MainFrame extends JFrame {
             boolean found = false;
 
             for (; duel <= dmax; duel++) {
-              Pixel ppp = scanner.scanOneFast(scanner.getImageData("duels" + duel + ".bmp"), area, false, true);
+              Pixel ppp = scanner.scanOneFast("duels" + duel + ".bmp", area, false, null, true);
               if (ppp != null) {
                 found = true;
                 break;
@@ -291,11 +291,10 @@ public class MainFrame extends JFrame {
 
           try {
 
-            checkForPrizes();
+            checkForPrizes("Matches");
 
             do {
-              scanner.scanOneFast(scanner.getImageData("centerCourt.bmp", scanner._scanArea, 0, 105), scanner._scanArea,
-                  true);
+              scanner.scanOneFast(scanner.getImageData("centerCourt.bmp", scanner._scanArea, 0, 105), null, true);
               mouse.delay(3000);
               Pixel p = scanner.scanOneFast("centerCourtTitle.bmp", scanner._scanArea, false);
               if (p != null) {
@@ -332,10 +331,14 @@ public class MainFrame extends JFrame {
                     p = scanner.scanOneFast("Continue.bmp", scanner._scanArea, true);
                     if (p == null && won) {
                       Rectangle area = new Rectangle(pv.x, pv.y + 380, 170, 60);
-                      p = scanner.scanOne("PrizeMatches.bmp", area, true);
-                      if (p != null) {
-                        handleAwards();
+                      p = null;// scanner.scanOne("PrizeMatches.bmp", area,
+                               // true);
+
+                      if (p == null) {
+                        mouse.click(pv.x + 129, pv.y + 410);
+                        mouse.delay(300);
                       }
+                      handleAwards();
                     }
 
                     if (p != null) {
@@ -401,6 +404,7 @@ public class MainFrame extends JFrame {
 
           Pixel pq = scanner.scanOneFast("playerComp.bmp", scanner._scanArea, false);
           if (pq != null) {
+            mouse.click(pq.x + 198, pq.y + 209);
             mouse.click(pq.x + 198, pq.y + 257);
             LOGGER.info("match");
             mouse.delay(5000);
@@ -415,19 +419,19 @@ public class MainFrame extends JFrame {
     });
   }
 
-  protected void checkForPrizes() {
+  protected void checkForPrizes(String type) {
     try {
       Rectangle area = new Rectangle(scanner._fullArea);
       area.x = scanner.getBottomRight().x - 146;
       area.width = 146;
       area.y += 93;
       area.height -= 93;
-      Pixel p = scanner.scanOneFast("GPMatches.bmp", area, false);
+      Pixel p = scanner.scanOneFast("GP" + type + ".bmp", area, false);
       if (p != null) {
-        LOGGER.info("GRAND PRIZE MATCHES!");
+        LOGGER.info("GRAND PRIZE " + type.toUpperCase());
         mouse.click(p);
         mouse.delay(2000);
-        
+
         handleAwards();
       }
     } catch (AWTException e) {
@@ -532,8 +536,8 @@ public class MainFrame extends JFrame {
             Pixel p = scanner.scanOneFast("club.bmp", scanner._scanArea, false);
             if (p == null) {
               // move se
-              Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2,
-                  scanner.getTopLeft().y + scanner.getGameHeight() / 2);
+              Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2, scanner.getTopLeft().y
+                  + scanner.getGameHeight() / 2);
               // mouse.mouseMove(m);
               final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
               screenSize.width = 1920 + 100;
@@ -661,8 +665,8 @@ public class MainFrame extends JFrame {
   }
 
   private void drag(int ewDir, int nsDir) throws RobotInterruptedException {
-    Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2,
-        scanner.getTopLeft().y + scanner.getGameHeight() / 2);
+    Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2, scanner.getTopLeft().y
+        + scanner.getGameHeight() / 2);
     // mouse.mouseMove(m);
     final Dimension screenSize = new Dimension();
     screenSize.width = 1920 + 100;
@@ -719,8 +723,8 @@ public class MainFrame extends JFrame {
               mouse.delay(100);
               if (move) {
                 // move approach
-                Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2,
-                    scanner.getTopLeft().y + scanner.getGameHeight() / 2);
+                Pixel m = new Pixel(scanner.getTopLeft().x + scanner.getGameWidth() / 2, scanner.getTopLeft().y
+                    + scanner.getGameHeight() / 2);
                 // mouse.mouseMove(m);
                 final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
                 screenSize.width = 1920 + 100;
@@ -903,6 +907,9 @@ public class MainFrame extends JFrame {
     public void execute() throws RobotInterruptedException, GameErrorException {
       if (_pairsToggle.isSelected())
         try {
+
+          checkForPrizes("Practice");
+
           // 1.
           mouse.delay(500);
           String minigame = "Pairs";
@@ -1001,6 +1008,7 @@ public class MainFrame extends JFrame {
       } while (!started && turn < 12);
 
       if (started) {
+        time = 0;
         final Pixel pp = p;
         // good
         int slotSize = 80;
@@ -1025,8 +1033,8 @@ public class MainFrame extends JFrame {
             for (int row = 1; row <= mrows; row++) {
               for (int col = 1; col <= mcols; col++) {
                 Slot slot = new Slot(row, col, true);
-                Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gap) + 20,
-                    gameArea.y + (row - 1) * (slotSize + gap) + 20, 40, 40);
+                Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gap) + 20, gameArea.y
+                    + (row - 1) * (slotSize + gap) + 20, 40, 40);
                 slot.area = slotArea;
                 matrix.put(slot.coords, slot);
               }
@@ -1088,8 +1096,7 @@ public class MainFrame extends JFrame {
             scanned = new ArrayList<Slot>(slotsNumber);
 
             // HIT IT!
-            boolean once = true;
-
+            int slow = settings.getInt("doPairs.slow", 60);
             LOGGER.info("Slots: " + slotsNumber);
 
             if (slotsNumber > 0) {
@@ -1108,9 +1115,9 @@ public class MainFrame extends JFrame {
                       mouse.click(slot.area.x, slot.area.y);
                       if (first) {
                         prev = coords;
-                        mouse.delay(140);
+                        mouse.delay(slow);
                       } else {
-                        mouse.delay(600);
+                        mouse.delay(550);// was 600
                         final Slot prevSlot = matrix.get(prev);
                         slot.image = scanSlot(slot.area);
                         prevSlot.image = scanSlot(prevSlot.area);
@@ -1119,13 +1126,13 @@ public class MainFrame extends JFrame {
                         new Thread(new Runnable() {
                           public void run() {
                             try {
-                              Thread.sleep(750);
+                              Thread.sleep(800);
                               if (PairsTools.areMatching(slot.area, prevSlot.area)) {
                                 prevSlot.active = false;
                                 slot.active = false;
                                 // scanned.remove(prevSlot);
                                 // scanned.remove(slot);
-                                time = System.currentTimeMillis() - 1000;
+                                time = System.currentTimeMillis() - 950;
                                 LOGGER.info("MATCH!!!");
                               }
                             } catch (Exception e) {
@@ -1155,10 +1162,10 @@ public class MainFrame extends JFrame {
                             if (slots[0].coords.equals(prevSlot.coords) || slots[0].coords.equals(slot.coords)
                                 || slots[1].coords.equals(prevSlot.coords) || slots[1].coords.equals(slot.coords)) {
                               LOGGER.info("hmm. wait a bit more...");
-                              mouse.delay(500);
+                              mouse.delay(650);
                             }
                             mouse.click(slots[0].area.x, slots[0].area.y);
-                            mouse.delay(200);
+                            mouse.delay(140);
                             mouse.click(slots[1].area.x, slots[1].area.y);
                             mouse.delay(600);
                             slots[0].active = false;
@@ -1302,6 +1309,7 @@ public class MainFrame extends JFrame {
     private boolean clickMatches(int mcols, int mrows, Map<Coords, Slot> matrix, int maxClicks)
         throws RobotInterruptedException, AWTException {
       int clicks = 0;
+      int slow = settings.getInt("doPairs.slow", 60);
       for (int row1 = 1; row1 <= mrows; row1++) {
         for (int col1 = 1; col1 <= mcols; col1++) {
 
@@ -1321,14 +1329,14 @@ public class MainFrame extends JFrame {
                   if (slot1.active && slot2.active && sameImage(slot1.image, slot2.image)) {
                     clicks++;
                     mouse.click(slot1.area.x, slot1.area.y);
-                    mouse.delay(200);
+                    mouse.delay(140 + slow);
                     mouse.click(slot2.area.x, slot2.area.y);
 
                     if (settings.getBoolean("debug", false)) {
                       // debug mf
                       captureSlots2(slot1, slot2);
                     } else
-                      mouse.delay(500);
+                      mouse.delay(200 + 5 * slow);
                     slot1.active = false;
                     slot2.active = false;
 
@@ -2186,8 +2194,8 @@ public class MainFrame extends JFrame {
         // practiceTask.execute();
         // matchTask.execute();
         // handlePopups(false);
-        LOGGER.info("jobs done. wait 5 secs");
-        mouse.delay(5000);
+        LOGGER.info("jobs done...");
+        mouse.delay(500);
       } while (!stopAllThreads);
 
     } catch (RobotInterruptedException e) {
@@ -2325,19 +2333,21 @@ public class MainFrame extends JFrame {
         mouse.click(p.x + 16, p.y + 16);
         mouse.delay(200);
       }
-      found = found || scanner.scanOneFast("Continue.bmp", scanner._scanArea, true) != null;
-      found = found || scanner.scanOneFast("ContinueBrown.bmp", scanner._scanArea, true) != null;
-      if (!found) {
-        p = scanner.scanOneFast("grandPrize.bmp", scanner._scanArea, true);
-        if (p == null)
-          p = scanner.scanOne("PrizeMatches.bmp", scanner._scanArea, true);
-        if (p != null) {
-          handleAwards();
-          mouse.delay(1000);
-          p = scanner.scanOneFast("x.bmp", scanner._scanArea, true);
-          found = true;
-        }
-      }
+      // found = found || scanner.scanOneFast("Continue.bmp", scanner._scanArea,
+      // true) != null;
+      // found = found || scanner.scanOneFast("ContinueBrown.bmp",
+      // scanner._scanArea, true) != null;
+      // if (!found) {
+      // p = scanner.scanOneFast("grandPrize.bmp", scanner._scanArea, true);
+      // if (p == null)
+      // p = scanner.scanOne("PrizeMatches.bmp", scanner._scanArea, true);
+      // if (p != null) {
+      // handleAwards();
+      // mouse.delay(1000);
+      // p = scanner.scanOneFast("x.bmp", scanner._scanArea, true);
+      // found = true;
+      // }
+      // }
 
     } catch (IOException e) {
       e.printStackTrace();
