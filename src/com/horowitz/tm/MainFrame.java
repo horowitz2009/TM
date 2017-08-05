@@ -71,7 +71,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.28ff";
+  private static String APP_TITLE = "TM v0.28ffb";
 
   private MouseRobot mouse;
 
@@ -259,6 +259,7 @@ public class MainFrame extends JFrame {
               return;// skip the rest
             }
             mouse.delay(2000);
+            LOGGER.info("check duels...");
             Pixel p = scanner.scanOneFast("DuelsClock.bmp", new Rectangle(x - 70, y, 140, 67), false);
             if (p == null) {
               LOGGER.info("DUELS FULL");
@@ -291,7 +292,12 @@ public class MainFrame extends JFrame {
 
           try {
 
-            checkForPrizes("Matches");
+            try {
+              checkForPrizes("Matches");
+            } catch (Exception e) {
+              LOGGER.info("Error doing grand prizes!");
+              e.printStackTrace();
+            }
 
             do {
               scanner.scanOneFast(scanner.getImageData("centerCourt.bmp", scanner._scanArea, 0, 105), null, true);
@@ -301,6 +307,7 @@ public class MainFrame extends JFrame {
                 LOGGER.info("entered center court...");
                 // Rectangle area = new Rectangle(p.x - 194, p.y + 129, 650,
                 // 34);
+                
                 int code = clickMatch(p);
                 boolean success = code == 1;
                 if (success) {
@@ -373,6 +380,8 @@ public class MainFrame extends JFrame {
 
       private int clickMatch(Pixel p) throws RobotInterruptedException, IOException, AWTException {
         mouse.delay(3000);
+        p.x += 95;
+        p.y -= 31;
         Rectangle slot1Area = new Rectangle(p.x + 97, p.y + 221, 5, 13);
         Rectangle slot2Area = new Rectangle(p.x + 97, p.y + 323, 5, 13);
         // Rectangle slot3Area = new Rectangle(p.x + 97, p.y + 425, 5, 13);
@@ -740,8 +749,8 @@ public class MainFrame extends JFrame {
                 mouse.delay(200);
                 mouse.mouseMove(scanner.getParkingPoint());
                 Rectangle area = new Rectangle(scanner._fullArea);
-                area.width -= 500;
-                area.height -= 280;
+                //area.width -= 500;
+                //area.height -= 280;
                 // scanner.writeArea(area, "area1.jpg");
                 clickBalls(area);
 
@@ -750,8 +759,8 @@ public class MainFrame extends JFrame {
                 mouse.dragFast(m.x + xx, m.y + yy, m.x - xx, m.y + yy, false, false);
                 mouse.delay(200);
                 mouse.mouseMove(scanner.getParkingPoint());
-                area.width = 570 + xx * 2;
-                area.x = scanner.getBottomRight().x - area.width;
+                //area.width = 570 + xx * 2;
+                //area.x = scanner.getBottomRight().x - area.width;
                 clickBalls(area);
 
                 // N
@@ -759,11 +768,11 @@ public class MainFrame extends JFrame {
                 mouse.dragFast(m.x - xx, m.y + yy, m.x - xx, m.y - yy, false, false);
                 mouse.delay(200);
                 mouse.mouseMove(scanner.getParkingPoint());
-                area = new Rectangle(scanner._fullArea);
-                area.height = 280 + 70 + yy * 2;
-                area.width = 570 + xx * 2;
-                area.x = scanner.getBottomRight().x - area.width;
-                area.y = scanner.getBottomRight().y - area.height;
+//                area = new Rectangle(scanner._fullArea);
+//                area.height = 280 + 70 + yy * 2;
+//                area.width = 570 + xx * 2;
+//                area.x = scanner.getBottomRight().x - area.width;
+//                area.y = scanner.getBottomRight().y - area.height;
                 clickBalls(area);
 
                 // E
@@ -771,8 +780,8 @@ public class MainFrame extends JFrame {
                 mouse.dragFast(m.x - xx, m.y - yy, m.x + xx, m.y - yy, false, false);
                 mouse.delay(200);
                 mouse.mouseMove(scanner.getParkingPoint());
-                area.width = scanner.getGameWidth() - 500;
-                area.x = scanner.getTopLeft().x;
+//                area.width = scanner.getGameWidth() - 500;
+//                area.x = scanner.getTopLeft().x;
                 clickBalls(area);
 
                 LOGGER.info("drag C");
@@ -974,7 +983,8 @@ public class MainFrame extends JFrame {
                       mouse.delay(3000);
                       refresh();
                     }
-                  }
+                  } else
+                    mouse.delay(6000);
 
                   handlePopups();
                   mouse.delay(1000);
