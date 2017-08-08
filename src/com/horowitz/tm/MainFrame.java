@@ -66,12 +66,13 @@ import com.horowitz.commons.SimilarityImageComparator;
 import com.horowitz.macros.AbstractGameProtocol;
 import com.horowitz.macros.Task;
 import com.horowitz.macros.TaskManager;
+import com.horowitz.ocr.OCRe;
 
 public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.28ffb";
+  private static String APP_TITLE = "TM v0.29";
 
   private MouseRobot mouse;
 
@@ -107,10 +108,15 @@ public class MainFrame extends JFrame {
   private TaskManager taskManager;
 
   protected boolean duelsFull;
+  protected boolean duelsChecked;
+  private int duels;
+  private int duelsLimit;
 
   private Stats stats;
 
   private Task clubTask;
+
+  private OCRe ocrDuels;
 
   public static void main(String[] args) {
 
@@ -152,7 +158,8 @@ public class MainFrame extends JFrame {
         setDefaultSettings();
       }
       stats = new Stats();
-
+      ocrDuels = new OCRe("ocr/duels/d");
+      ocrDuels.getThreshold().setValue(160);
       scanner = new ScreenScanner(settings);
       scanner.getMatcher().setSimilarityThreshold(.90d);
 
@@ -235,39 +242,64 @@ public class MainFrame extends JFrame {
 
             Rectangle area = new Rectangle(x - 52, y - 8, 80, 13);
             // scanner.writeArea(area, "duels.bmp");
-            //
-            // public Pixel scanOne(ImageData imageData, Rectangle area, boolean
-            // click, Color colorToBypass, boolean bwMode)
-            // public Pixel scanOneFast(ImageData imageData, Rectangle area,
-            // boolean click, boolean bwMode) throws AWTException,
-            int dmin = 18;
-            int dmax = 21;
-            int duel = dmin;
-            boolean found = false;
+            duelsChecked = false;
+            duelsFull = false;
 
-            for (; duel <= dmax; duel++) {
-              Pixel ppp = scanner.scanOneFast("duels" + duel + ".bmp", area, false, null, true);
-              if (ppp != null) {
-                found = true;
-                break;
+            if (settings.getBoolean("duels.ocr", true)) {
+
+              try {
+                String d = ocrDuels.scanImage(new Robot().createScreenCapture(area));
+                String[] dd = d.split("/");
+                if (dd.length == 2) {
+                  int dcurrent = Integer.parseInt(dd[0]);
+                  int dmax = Integer.parseInt(dd[1]);
+                  LOGGER.info("Duels: " + dcurrent + " / " + dmax);
+                  duels = dcurrent;
+                  duelsLimit = dmax;
+                  duelsChecked = true;
+                }
+
+              } catch (Exception e) {
               }
             }
-            if (found) {
-              LOGGER.info("DUELS " + duel);
-              duelsFull = true;
-              ((AbstractGameProtocol) matchTask.getProtocol()).sleep(0);
-              return;// skip the rest
+
+            if (!duelsChecked) {
+
+              //
+              // public Pixel scanOne(ImageData imageData, Rectangle area,
+              // boolean
+              // click, Color colorToBypass, boolean bwMode)
+              // public Pixel scanOneFast(ImageData imageData, Rectangle area,
+              // boolean click, boolean bwMode) throws AWTException,
+              int dmin = 18;
+              int dmax = 21;
+              int duel = dmin;
+              boolean found = false;
+
+              for (; duel <= dmax; duel++) {
+                Pixel ppp = scanner.scanOneFast("duels" + duel + ".bmp", area, false, null, true);
+                if (ppp != null) {
+                  found = true;
+                  break;
+                }
+              }
+              if (found) {
+                LOGGER.info("DUELS " + duel);
+                duelsFull = true;
+                ((AbstractGameProtocol) matchTask.getProtocol()).sleep(0);
+                return;// skip the rest
+              }
+              mouse.delay(2000);
+              LOGGER.info("check duels...");
+              Pixel p = scanner.scanOneFast("DuelsClock.bmp", new Rectangle(x - 70, y, 140, 67), false);
+              if (p == null) {
+                LOGGER.info("DUELS FULL");
+                duelsFull = true;
+                ((AbstractGameProtocol) matchTask.getProtocol()).sleep(0);
+              } else
+                duelsFull = false;
+              mouse.delay(100);
             }
-            mouse.delay(2000);
-            LOGGER.info("check duels...");
-            Pixel p = scanner.scanOneFast("DuelsClock.bmp", new Rectangle(x - 70, y, 140, 67), false);
-            if (p == null) {
-              LOGGER.info("DUELS FULL");
-              duelsFull = true;
-              ((AbstractGameProtocol) matchTask.getProtocol()).sleep(0);
-            } else
-              duelsFull = false;
-            mouse.delay(100);
           } catch (IOException e) {
             e.printStackTrace();
           } catch (AWTException e) {
@@ -302,12 +334,12 @@ public class MainFrame extends JFrame {
             do {
               scanner.scanOneFast(scanner.getImageData("centerCourt.bmp", scanner._scanArea, 0, 105), null, true);
               mouse.delay(3000);
-              Pixel p = scanner.scanOneFast("centerCourtTitle.bmp", scanner._scanArea, false);
+              Pixel p = scanner.scanOneFast("centerCourtVS.bmp", scanner._scanArea, false);
               if (p != null) {
                 LOGGER.info("entered center court...");
                 // Rectangle area = new Rectangle(p.x - 194, p.y + 129, 650,
                 // 34);
-                
+
                 int code = clickMatch(p);
                 boolean success = code == 1;
                 if (success) {
@@ -380,11 +412,12 @@ public class MainFrame extends JFrame {
 
       private int clickMatch(Pixel p) throws RobotInterruptedException, IOException, AWTException {
         mouse.delay(3000);
-        p.x += 95;
-        p.y -= 31;
+        p.x -= 21;
+        p.y -= 248;
         Rectangle slot1Area = new Rectangle(p.x + 97, p.y + 221, 5, 13);
         Rectangle slot2Area = new Rectangle(p.x + 97, p.y + 323, 5, 13);
         // Rectangle slot3Area = new Rectangle(p.x + 97, p.y + 425, 5, 13);
+
         Pixel pp = null;
         Pixel ph = scanner.scanOneFast("easyGreen.bmp", slot1Area, false);
         if (ph != null) {
@@ -403,8 +436,34 @@ public class MainFrame extends JFrame {
             pp = new Pixel(ph.x + 332, ph.y - 42);
           }
         }
+        boolean ok = false;
+        if (duelsChecked) {
+          int gap = duelsLimit - duels;
+          LOGGER.info("duels gap: " + gap);
+          int minRanking = 10;
+          if (1 <= gap && gap <= 3)
+            minRanking = 9;
+          else if (gap < 1)
+            minRanking = -1;
 
-        if (pp == null && duelsFull)
+          if (minRanking > 0) {
+            LOGGER.info("ranking required: "+minRanking);
+            Rectangle areaRanking = new Rectangle(p.x + 430, p.y + 207, 50, 20);
+            //scanner.writeArea(areaRanking, "areaRanking.bmp");
+            for (int i = minRanking; i <= 10; i++) {
+              Pixel pr = scanner.scanOneFast("ranking" + i + ".bmp", areaRanking, false);
+              if (pr != null) {
+                LOGGER.info("ranking: " + i);
+                ok = true;
+                break;
+              }
+            }
+            if (!ok)
+              LOGGER.info("ranking not good!");
+          }
+        }
+
+        if (pp == null && (ok || duelsFull))
           pp = new Pixel(p.x + 424, p.y + 180);
 
         if (pp != null) {
@@ -749,8 +808,8 @@ public class MainFrame extends JFrame {
                 mouse.delay(200);
                 mouse.mouseMove(scanner.getParkingPoint());
                 Rectangle area = new Rectangle(scanner._fullArea);
-                //area.width -= 500;
-                //area.height -= 280;
+                // area.width -= 500;
+                // area.height -= 280;
                 // scanner.writeArea(area, "area1.jpg");
                 clickBalls(area);
 
@@ -759,8 +818,8 @@ public class MainFrame extends JFrame {
                 mouse.dragFast(m.x + xx, m.y + yy, m.x - xx, m.y + yy, false, false);
                 mouse.delay(200);
                 mouse.mouseMove(scanner.getParkingPoint());
-                //area.width = 570 + xx * 2;
-                //area.x = scanner.getBottomRight().x - area.width;
+                // area.width = 570 + xx * 2;
+                // area.x = scanner.getBottomRight().x - area.width;
                 clickBalls(area);
 
                 // N
@@ -768,11 +827,11 @@ public class MainFrame extends JFrame {
                 mouse.dragFast(m.x - xx, m.y + yy, m.x - xx, m.y - yy, false, false);
                 mouse.delay(200);
                 mouse.mouseMove(scanner.getParkingPoint());
-//                area = new Rectangle(scanner._fullArea);
-//                area.height = 280 + 70 + yy * 2;
-//                area.width = 570 + xx * 2;
-//                area.x = scanner.getBottomRight().x - area.width;
-//                area.y = scanner.getBottomRight().y - area.height;
+                // area = new Rectangle(scanner._fullArea);
+                // area.height = 280 + 70 + yy * 2;
+                // area.width = 570 + xx * 2;
+                // area.x = scanner.getBottomRight().x - area.width;
+                // area.y = scanner.getBottomRight().y - area.height;
                 clickBalls(area);
 
                 // E
@@ -780,8 +839,8 @@ public class MainFrame extends JFrame {
                 mouse.dragFast(m.x - xx, m.y - yy, m.x + xx, m.y - yy, false, false);
                 mouse.delay(200);
                 mouse.mouseMove(scanner.getParkingPoint());
-//                area.width = scanner.getGameWidth() - 500;
-//                area.x = scanner.getTopLeft().x;
+                // area.width = scanner.getGameWidth() - 500;
+                // area.x = scanner.getTopLeft().x;
                 clickBalls(area);
 
                 LOGGER.info("drag C");
