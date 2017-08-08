@@ -249,11 +249,12 @@ public class MainFrame extends JFrame {
 
               try {
                 String d = ocrDuels.scanImage(new Robot().createScreenCapture(area));
+                LOGGER.info("duels: [" + d + "]");
                 String[] dd = d.split("/");
                 if (dd.length == 2) {
                   int dcurrent = Integer.parseInt(dd[0]);
                   int dmax = Integer.parseInt(dd[1]);
-                  LOGGER.info("Duels: " + dcurrent + " / " + dmax);
+                  LOGGER.info("Duels parsed: " + dcurrent + " / " + dmax);
                   duels = dcurrent;
                   duelsLimit = dmax;
                   duelsChecked = true;
@@ -334,12 +335,19 @@ public class MainFrame extends JFrame {
             do {
               scanner.scanOneFast(scanner.getImageData("centerCourt.bmp", scanner._scanArea, 0, 105), null, true);
               mouse.delay(3000);
-              Pixel p = scanner.scanOneFast("centerCourtVS.bmp", scanner._scanArea, false);
+              Pixel p = scanner.scanOneFast("centerCourtTitle.bmp", scanner._scanArea, false);
+              if (p != null) {
+                p.x += 95;
+                p.y -= 31;
+              } else {
+                p = scanner.scanOneFast("centerCourtVS.bmp", scanner._scanArea, false);
+                if (p != null) {
+                  p.x -= 21;
+                  p.y -= 248;
+                }
+              }
               if (p != null) {
                 LOGGER.info("entered center court...");
-                // Rectangle area = new Rectangle(p.x - 194, p.y + 129, 650,
-                // 34);
-
                 int code = clickMatch(p);
                 boolean success = code == 1;
                 if (success) {
@@ -412,8 +420,7 @@ public class MainFrame extends JFrame {
 
       private int clickMatch(Pixel p) throws RobotInterruptedException, IOException, AWTException {
         mouse.delay(3000);
-        p.x -= 21;
-        p.y -= 248;
+
         Rectangle slot1Area = new Rectangle(p.x + 97, p.y + 221, 5, 13);
         Rectangle slot2Area = new Rectangle(p.x + 97, p.y + 323, 5, 13);
         // Rectangle slot3Area = new Rectangle(p.x + 97, p.y + 425, 5, 13);
@@ -447,9 +454,9 @@ public class MainFrame extends JFrame {
             minRanking = -1;
 
           if (minRanking > 0) {
-            LOGGER.info("ranking required: "+minRanking);
+            LOGGER.info("ranking required: " + minRanking);
             Rectangle areaRanking = new Rectangle(p.x + 430, p.y + 207, 50, 20);
-            //scanner.writeArea(areaRanking, "areaRanking.bmp");
+            // scanner.writeArea(areaRanking, "areaRanking.bmp");
             for (int i = minRanking; i <= 10; i++) {
               Pixel pr = scanner.scanOneFast("ranking" + i + ".bmp", areaRanking, false);
               if (pr != null) {
