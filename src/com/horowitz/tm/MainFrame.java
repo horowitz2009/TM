@@ -278,7 +278,7 @@ public class MainFrame extends JFrame {
               boolean found = false;
 
               for (; duel <= dmax; duel++) {
-                Pixel ppp = scanner.scanOneFast("duels" + duel + ".bmp", area, false, null, true);
+                Pixel ppp = scanner.scanOneFast("duels" + duel + ".bmp", area, false, null, true, false);
                 if (ppp != null) {
                   found = true;
                   break;
@@ -456,9 +456,9 @@ public class MainFrame extends JFrame {
           if (minRanking > 0) {
             LOGGER.info("ranking required: " + minRanking);
             Rectangle areaRanking = new Rectangle(p.x + 430, p.y + 207, 50, 20);
-            // scanner.writeArea(areaRanking, "areaRanking.bmp");
+            scanner.writeArea(areaRanking, "areaRanking.bmp");
             for (int i = minRanking; i <= 10; i++) {
-              Pixel pr = scanner.scanOneFast("ranking" + i + ".bmp", areaRanking, false);
+              Pixel pr = scanner.scanOneFast("ranking" + i + ".bmp", areaRanking, false, null, true, true);
               if (pr != null) {
                 LOGGER.info("ranking: " + i);
                 ok = true;
