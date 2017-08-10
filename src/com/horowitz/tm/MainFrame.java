@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.29";
+  private static String APP_TITLE = "TM v0.29d";
 
   private MouseRobot mouse;
 
@@ -224,6 +224,8 @@ public class MainFrame extends JFrame {
 
   }
 
+  private long lastTime = 0;
+
   private void checkDuelsTask() {
     checkDuelsTask = new Task("Check Duels", 1);
     checkDuelsTask.setProtocol(new AbstractGameProtocol() {
@@ -244,8 +246,14 @@ public class MainFrame extends JFrame {
             // scanner.writeArea(area, "duels.bmp");
             duelsChecked = false;
             duelsFull = false;
+            if (settings.getBoolean("duels.ocr.capture", true)) {
+              if (lastTime == 0 || System.currentTimeMillis() - lastTime > 4 * 60000) {
+                scanner.writeAreaTS(area, "duels.bmp");
+                lastTime = System.currentTimeMillis();
+              }
+            }
 
-            if (settings.getBoolean("duels.ocr", true)) {
+            if (settings.getBoolean("duels.ocr", false)) {
 
               try {
                 String d = ocrDuels.scanImage(new Robot().createScreenCapture(area));
@@ -266,30 +274,32 @@ public class MainFrame extends JFrame {
 
             if (!duelsChecked) {
 
+              // //
+              // // public Pixel scanOne(ImageData imageData, Rectangle area,
+              // // boolean
+              // // click, Color colorToBypass, boolean bwMode)
+              // // public Pixel scanOneFast(ImageData imageData, Rectangle
+              // area,
+              // // boolean click, boolean bwMode) throws AWTException,
+              // int dmin = 18;
+              // int dmax = 21;
+              // int duel = dmin;
+              // boolean found = false;
               //
-              // public Pixel scanOne(ImageData imageData, Rectangle area,
-              // boolean
-              // click, Color colorToBypass, boolean bwMode)
-              // public Pixel scanOneFast(ImageData imageData, Rectangle area,
-              // boolean click, boolean bwMode) throws AWTException,
-              int dmin = 18;
-              int dmax = 21;
-              int duel = dmin;
-              boolean found = false;
-
-              for (; duel <= dmax; duel++) {
-                Pixel ppp = scanner.scanOneFast("duels" + duel + ".bmp", area, false, null, true, false);
-                if (ppp != null) {
-                  found = true;
-                  break;
-                }
-              }
-              if (found) {
-                LOGGER.info("DUELS " + duel);
-                duelsFull = true;
-                ((AbstractGameProtocol) matchTask.getProtocol()).sleep(0);
-                return;// skip the rest
-              }
+              // for (; duel <= dmax; duel++) {
+              // Pixel ppp = scanner.scanOneFast("duels" + duel + ".bmp", area,
+              // false, null, true, false);
+              // if (ppp != null) {
+              // found = true;
+              // break;
+              // }
+              // }
+              // if (found) {
+              // LOGGER.info("DUELS " + duel);
+              // duelsFull = true;
+              // ((AbstractGameProtocol) matchTask.getProtocol()).sleep(0);
+              // return;// skip the rest
+              // }
               mouse.delay(2000);
               LOGGER.info("check duels...");
               Pixel p = scanner.scanOneFast("DuelsClock.bmp", new Rectangle(x - 70, y, 140, 67), false);
@@ -468,6 +478,19 @@ public class MainFrame extends JFrame {
             if (!ok)
               LOGGER.info("ranking not good!");
           }
+        }
+
+        // TEMP
+        if (!duelsFull) {
+          int minRanking = 10;
+          LOGGER.info("ranking required: " + minRanking);
+          Rectangle areaRanking = new Rectangle(p.x + 430, p.y + 207, 50, 20);
+          // scanner.writeArea(areaRanking, "areaRanking.bmp");
+          Pixel pr = scanner.scanOneFast("ranking" + minRanking + ".bmp", areaRanking, false, null, true, true);
+          if (pr != null) {
+            ok = true;
+          } else
+            LOGGER.info("ranking not good!");
         }
 
         if (pp == null && (ok || duelsFull))
