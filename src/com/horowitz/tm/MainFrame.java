@@ -257,17 +257,17 @@ public class MainFrame extends JFrame {
               mouse.delay(1000);
               step = 104;
               for (int i = 2; !found && i >= 1; i--) {
-                Rectangle area = new Rectangle(p.x + 207 - 550, p.y + 475 - 425, 555, 425);
-                Rectangle area1 = new Rectangle(area);
-                int col = 4;
-                area1.x = area.x + col * 110;
-                area1.width = 110;
+                //Rectangle area = new Rectangle(p.x + 207 - 550, p.y + 475 - 425, 555, 425);
+                //Rectangle area1 = new Rectangle(area);
+                //int col = 4;
+                //area1.x = area.x + col * 110;
+                //area1.width = 110;
                 for (int j = 4; !found && j >= 0; j--) {
-                  area1.x = area.x + j * 110;
-                  area1.width = 110;
+                  //area1.x = area.x + j * 110;
+                  //area1.width = 110;
                   // scanner.writeAreaTS(area1, "area" + j + i + ".bmp");
-                  System.err.println("area" + j + i + ".bmp");
-                  Pixel pp = scanner.scanOneFast(scanner.getImageData("sfPlus.bmp", area1, 0, 0), null, true);
+                  //System.err.println("area" + j + i + ".bmp");
+                  Pixel pp = scanner.scanOneFast(scanner.getImageData("sfPlus.bmp", scanner._scanArea, 0, 0), null, true);
                   if (pp != null) {
                     // look for OK button
                     mouse.mouseMove(scanner.getParkingPoint());
@@ -290,6 +290,7 @@ public class MainFrame extends JFrame {
 
               if (found) {
                 LOGGER.info("Summer: started a part...");
+                mouse.delay(3000);
                 captureScreen("ping/summer ");
               } else {
                 // look for build button
@@ -321,17 +322,17 @@ public class MainFrame extends JFrame {
         step = 104;
         boolean found = false;
         for (int i = 2; !found && i >= 1; i--) {
-          Rectangle area = new Rectangle(p.x + 207 - 550, p.y + 475 - 425, 555, 425);
-          Rectangle area1 = new Rectangle(area);
-          int col = 4;
-          area1.x = area.x + col * 110;
-          area1.width = 110;
+          //Rectangle area = new Rectangle(p.x + 207 - 550, p.y + 475 - 425, 555, 425);
+          //Rectangle area1 = new Rectangle(area);
+          //nt col = 4;
+          //area1.x = area.x + col * 110;
+          //area1.width = 110;
           for (int j = 4; !found && j >= 0; j--) {
-            area1.x = area.x + j * 110;
-            area1.width = 110;
+            //area1.x = area.x + j * 110;
+            //area1.width = 110;
             // scanner.writeAreaTS(area1, "area" + j + i + ".bmp");
             System.err.println("area" + j + i + ".bmp");
-            Pixel pp = scanner.scanOneFast(scanner.getImageData("sfBuild.bmp", area1, 0, 0), null, true);
+            Pixel pp = scanner.scanOneFast(scanner.getImageData("sfBuild.bmp", scanner._scanArea, 0, 0), null, true);
             if (pp != null) {
               // look for OK button
               mouse.mouseMove(scanner.getParkingPoint());
