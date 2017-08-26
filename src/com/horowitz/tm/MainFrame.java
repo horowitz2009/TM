@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.29d";
+  private static String APP_TITLE = "TM v0.30";
 
   private MouseRobot mouse;
 
@@ -95,6 +95,7 @@ public class MainFrame extends JFrame {
   private JToggleButton _bankToggle;
   private JToggleButton _clubToggle;
   private JToggleButton _clubDuelsToggle;
+  private JToggleButton _sfToggle;
 
   private Task practiceTask;
   private Task sponsorTask;
@@ -104,6 +105,7 @@ public class MainFrame extends JFrame {
   private Task ballTask;
   private Task bankTask;
   private Task pairsTask;
+  private Task sfTask;
 
   private TaskManager taskManager;
 
@@ -178,13 +180,15 @@ public class MainFrame extends JFrame {
       sponsorTask();
       clubTask();
       checkDuelsTask();
-
+      sfTask();
       taskManager = new TaskManager(mouse);
       taskManager.addTask(practiceTask);
       taskManager.addTask(pairsTask);
       taskManager.addTask(checkDuelsTask);
       taskManager.addTask(matchTask);
       taskManager.addTask(bankTask);
+
+      taskManager.addTask(sfTask);
       taskManager.addTask(premiumTask);
       taskManager.addTask(sponsorTask);
       taskManager.addTask(ballTask);
@@ -226,6 +230,133 @@ public class MainFrame extends JFrame {
 
   private long lastTime = 0;
 
+  private void sfTask() {
+    sfTask = new Task("Summer Fiesta", 1);
+    sfTask.setProtocol(new AbstractGameProtocol() {
+
+      @Override
+      public void execute() throws RobotInterruptedException, GameErrorException {
+        if (_sfToggle.isSelected()) {
+          handlePopups();
+
+          try {
+            mouse.delay(500);
+
+            scanner.scanOneFast(scanner.getImageData("summerFiesta.bmp", scanner._scanArea, 0, 0), null, true);
+            mouse.delay(3000);
+            Pixel p = scanner.scanOneFast("summerFiestaTitle.bmp", scanner._scanArea, false);
+            if (p != null) {
+              boolean found = false;
+              // GOOOOOOOD!
+              LOGGER.info("Summer Fiesta...");
+              // drag to the end
+              int x1 = p.x + 557;
+              int y1 = p.y + 75;
+              int step = 55;
+              mouse.dragFast(x1, y1 + 0 * step, x1, y1 + (4 + 1) * step, false, false);
+              mouse.delay(1000);
+              step = 104;
+              for (int i = 2; !found && i >= 1; i--) {
+                Rectangle area = new Rectangle(p.x + 207 - 550, p.y + 475 - 425, 555, 425);
+                Rectangle area1 = new Rectangle(area);
+                int col = 4;
+                area1.x = area.x + col * 110;
+                area1.width = 110;
+                for (int j = 4; !found && j >= 0; j--) {
+                  area1.x = area.x + j * 110;
+                  area1.width = 110;
+                  // scanner.writeAreaTS(area1, "area" + j + i + ".bmp");
+                  System.err.println("area" + j + i + ".bmp");
+                  Pixel pp = scanner.scanOneFast(scanner.getImageData("sfPlus.bmp", area1, 0, 0), null, true);
+                  if (pp != null) {
+                    // look for OK button
+                    mouse.mouseMove(scanner.getParkingPoint());
+                    mouse.delay(1000);
+                    pp = scanner.scanOneFast(scanner.getImageData("sfOK.bmp", scanner._scanArea, 0, 0), null, true);
+                    if (pp != null) {
+                      // we're done here
+                      mouse.delay(1000);
+                      found = true;
+                      break;
+                    }
+                  }
+                }
+                if (!found) {
+                  mouse.delay(1000);
+                  mouse.dragFast(x1, y1 + (i + 1) * step, x1, y1 + (i) * step, false, false);
+                  mouse.delay(1000);
+                }
+              }
+
+              if (found) {
+                LOGGER.info("Summer: started a part...");
+                captureScreen("ping/summer ");
+              } else {
+                // look for build button
+                if (lookForBuild(p)) {
+                  LOGGER.info("Summer: just built something...");
+                  captureScreen("ping/summer ");
+                }
+              }
+              deleteOlder("ping", "summer", -1, 24);
+
+            }
+
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+
+          sleep(1);
+        }
+      }
+
+      private boolean lookForBuild(Pixel p) throws RobotInterruptedException, AWTException, IOException {
+        int x1 = p.x + 557;
+        int y1 = p.y + 75;
+        int step = 55;
+        mouse.click(x1, y1);
+        mouse.delay(1000);
+        mouse.dragFast(x1, y1 + 0 * step, x1, y1 + (4 + 1) * step, false, false);
+        mouse.delay(1000);
+        step = 104;
+        boolean found = false;
+        for (int i = 2; !found && i >= 1; i--) {
+          Rectangle area = new Rectangle(p.x + 207 - 550, p.y + 475 - 425, 555, 425);
+          Rectangle area1 = new Rectangle(area);
+          int col = 4;
+          area1.x = area.x + col * 110;
+          area1.width = 110;
+          for (int j = 4; !found && j >= 0; j--) {
+            area1.x = area.x + j * 110;
+            area1.width = 110;
+            // scanner.writeAreaTS(area1, "area" + j + i + ".bmp");
+            System.err.println("area" + j + i + ".bmp");
+            Pixel pp = scanner.scanOneFast(scanner.getImageData("sfBuild.bmp", area1, 0, 0), null, true);
+            if (pp != null) {
+              // look for OK button
+              mouse.mouseMove(scanner.getParkingPoint());
+              mouse.delay(1000);
+              String sfButton = settings.getBoolean("tasks.sf.toClub", true) ? "sfToClub.bmp" : "sfToSelf.bmp";
+              pp = scanner.scanOneFast(scanner.getImageData(sfButton, scanner._scanArea, 0, 0), null, true);
+              if (pp != null) {
+                // we're done here
+                mouse.delay(1000);
+                found = true;
+                break;
+              }
+            }
+          }
+          if (!found) {
+            mouse.delay(1000);
+            mouse.dragFast(x1, y1 + (i + 1) * step, x1, y1 + (i) * step, false, false);
+            mouse.delay(1000);
+          }
+        }
+        return found;
+      }
+    });
+  }
+
   private void checkDuelsTask() {
     checkDuelsTask = new Task("Check Duels", 1);
     checkDuelsTask.setProtocol(new AbstractGameProtocol() {
@@ -246,7 +377,7 @@ public class MainFrame extends JFrame {
             // scanner.writeArea(area, "duels.bmp");
             duelsChecked = false;
             duelsFull = false;
-            if (settings.getBoolean("duels.ocr.capture", true)) {
+            if (settings.getBoolean("duels.ocr.capture", false)) {
               if (lastTime == 0 || System.currentTimeMillis() - lastTime > 4 * 60000) {
                 scanner.writeAreaTS(area, "duels.bmp");
                 lastTime = System.currentTimeMillis();
@@ -1907,9 +2038,22 @@ public class MainFrame extends JFrame {
       }
     });
 
+    // Summer Fiesta
+    _sfToggle = new JToggleButton("SF");
+    toolbar.add(_sfToggle);
+    _sfToggle.addItemListener(new ItemListener() {
+      @Override
+      public void itemStateChanged(ItemEvent e) {
+        boolean b = e.getStateChange() == ItemEvent.SELECTED;
+        LOGGER.info("Summer Fiesta: " + (b ? "on" : "off"));
+        settings.setProperty("tasks.sf", "" + b);
+        settings.saveSettingsSorted();
+      }
+    });
+
     // Practice
     _practiceToggle = new JToggleButton("Pr");
-    toolbar.add(_practiceToggle);
+    // toolbar.add(_practiceToggle);
     _practiceToggle.addItemListener(new ItemListener() {
       @Override
       public void itemStateChanged(ItemEvent e) {
@@ -2517,6 +2661,11 @@ public class MainFrame extends JFrame {
     boolean sponsors = "true".equalsIgnoreCase(settings.getProperty("tasks.sponsors"));
     if (sponsors != _sponsorsToggle.isSelected()) {
       _sponsorsToggle.setSelected(sponsors);
+    }
+
+    boolean sf = "true".equalsIgnoreCase(settings.getProperty("tasks.sf"));
+    if (sf != _sfToggle.isSelected()) {
+      _sfToggle.setSelected(sf);
     }
 
     boolean practice = "true".equalsIgnoreCase(settings.getProperty("tasks.practice"));
