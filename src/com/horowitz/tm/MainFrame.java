@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.31a";
+  private static String APP_TITLE = "TM v0.31s";
 
   private MouseRobot mouse;
 
@@ -238,6 +238,7 @@ public class MainFrame extends JFrame {
       public void execute() throws RobotInterruptedException, GameErrorException {
         if (_sfToggle.isSelected()) {
           handlePopups();
+          boolean found = false;
 
           try {
             mouse.delay(500);
@@ -246,7 +247,6 @@ public class MainFrame extends JFrame {
             mouse.delay(3000);
             Pixel p = scanner.scanOneFast("summerFiestaTitle.bmp", scanner._scanArea, false);
             if (p != null) {
-              boolean found = false;
               // GOOOOOOOD!
               LOGGER.info("Summer Fiesta...");
               // drag to the end
@@ -257,7 +257,7 @@ public class MainFrame extends JFrame {
               mouse.delay(1000);
               step = 104;
               Rectangle area = new Rectangle(p.x + 207 - 550, p.y + 475 - 425, 555, 425);
-              //scanner.writeAreaTS(area, "area.bmp");
+              // scanner.writeAreaTS(area, "area.bmp");
               Rectangle area1 = new Rectangle(area);
               area1.y = area.y + area.height - 130;
               area1.height = 130;
@@ -312,14 +312,16 @@ public class MainFrame extends JFrame {
           } catch (Exception e) {
             e.printStackTrace();
           }
-
-          sleep(1);
+          if (found)
+            sleep(2 * 60000);// 2min
+          else
+            sleep(1 * 30000);// 30sec
         }
       }
 
       private boolean scanPlus(Rectangle area) throws RobotInterruptedException, AWTException, IOException {
         boolean found = false;
-        //scanner.writeAreaTS(area, "area.bmp");
+        // scanner.writeAreaTS(area, "area.bmp");
         Pixel pp = scanner.scanOneFast(scanner.getImageData("sfPlus.bmp", area, 0, 0), null, true);
         if (pp != null) {
           // look for OK button
@@ -765,6 +767,9 @@ public class MainFrame extends JFrame {
                 mouse.click(p.x, p.y + 303);
                 mouse.delay(3500);
                 mouse.click(p.x + 357, p.y + 303);
+                mouse.delay(3500);
+                // 3RD SPONSOR
+                mouse.click(p.x, p.y + 303 + 105);
                 mouse.delay(3000);
                 LOGGER.info("sleep 2min");
                 sleep(2 * 60000);
