@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.30";
+  private static String APP_TITLE = "TM v0.31a";
 
   private MouseRobot mouse;
 
@@ -256,47 +256,53 @@ public class MainFrame extends JFrame {
               mouse.dragFast(x1, y1 + 0 * step, x1, y1 + (4 + 1) * step, false, false);
               mouse.delay(1000);
               step = 104;
-              for (int i = 2; !found && i >= 1; i--) {
-                //Rectangle area = new Rectangle(p.x + 207 - 550, p.y + 475 - 425, 555, 425);
-                //Rectangle area1 = new Rectangle(area);
-                //int col = 4;
-                //area1.x = area.x + col * 110;
-                //area1.width = 110;
-                for (int j = 4; !found && j >= 0; j--) {
-                  //area1.x = area.x + j * 110;
-                  //area1.width = 110;
-                  // scanner.writeAreaTS(area1, "area" + j + i + ".bmp");
-                  //System.err.println("area" + j + i + ".bmp");
-                  Pixel pp = scanner.scanOneFast(scanner.getImageData("sfPlus.bmp", scanner._scanArea, 0, 0), null, true);
-                  if (pp != null) {
-                    // look for OK button
-                    mouse.mouseMove(scanner.getParkingPoint());
-                    mouse.delay(1000);
-                    pp = scanner.scanOneFast(scanner.getImageData("sfOK.bmp", scanner._scanArea, 0, 0), null, true);
-                    if (pp != null) {
-                      // we're done here
-                      mouse.delay(1000);
-                      found = true;
-                      break;
-                    }
-                  }
-                }
+              Rectangle area = new Rectangle(p.x + 207 - 550, p.y + 475 - 425, 555, 425);
+              //scanner.writeAreaTS(area, "area.bmp");
+              Rectangle area1 = new Rectangle(area);
+              area1.y = area.y + area.height - 130;
+              area1.height = 130;
+              // 1
+              LOGGER.info("sf 1");
+              found = scanPlus(area1);
+              if (!found) {
+                area1.y -= 125;
+                LOGGER.info("sf 2");
+                found = scanPlus(area1);
+              }
+
+              if (!found) {
+                area1.y -= 125;
+                LOGGER.info("sf 3");
+                found = scanPlus(area1);
+              }
+              if (!found) {
+                // time for drag
+                int i = 2;
+                mouse.delay(1000);
+                mouse.dragFast(x1, y1 + (i + 1) * step, x1, y1 + (i) * step, false, false);
+                mouse.delay(1000);
+                area1.y = area.y + area.height - 130;
+                area1.height = 130;
+                LOGGER.info("sf 4");
+                found = scanPlus(area1);
                 if (!found) {
-                  mouse.delay(1000);
-                  mouse.dragFast(x1, y1 + (i + 1) * step, x1, y1 + (i) * step, false, false);
-                  mouse.delay(1000);
+                  area1.y -= 125;
+                  LOGGER.info("sf 5");
+                  found = scanPlus(area1);
+                }
+
+                if (!found) {
+                  area1.y -= 125;
+                  LOGGER.info("sf 6");
+                  found = scanPlus(area1);
                 }
               }
 
-              if (found) {
-                LOGGER.info("Summer: started a part...");
-                mouse.delay(3000);
-                captureScreen("ping/summer ");
-              } else {
+              if (!found) {
                 // look for build button
                 if (lookForBuild(p)) {
                   LOGGER.info("Summer: just built something...");
-                  captureScreen("ping/summer ");
+                  captureScreen("ping/summer build ");
                 }
               }
               deleteOlder("ping", "summer", -1, 24);
@@ -311,6 +317,26 @@ public class MainFrame extends JFrame {
         }
       }
 
+      private boolean scanPlus(Rectangle area) throws RobotInterruptedException, AWTException, IOException {
+        boolean found = false;
+        //scanner.writeAreaTS(area, "area.bmp");
+        Pixel pp = scanner.scanOneFast(scanner.getImageData("sfPlus.bmp", area, 0, 0), null, true);
+        if (pp != null) {
+          // look for OK button
+          mouse.mouseMove(scanner.getParkingPoint());
+          mouse.delay(1000);
+          pp = scanner.scanOneFast(scanner.getImageData("sfOK.bmp", scanner._scanArea, 0, 0), null, true);
+          if (pp != null) {
+            // we're done here
+            LOGGER.info("Summer: started a part...");
+            mouse.delay(3500);
+            captureScreen("ping/summer part ");
+            found = true;
+          }
+        }
+        return found;
+      }
+
       private boolean lookForBuild(Pixel p) throws RobotInterruptedException, AWTException, IOException {
         int x1 = p.x + 557;
         int y1 = p.y + 75;
@@ -322,14 +348,15 @@ public class MainFrame extends JFrame {
         step = 104;
         boolean found = false;
         for (int i = 2; !found && i >= 1; i--) {
-          //Rectangle area = new Rectangle(p.x + 207 - 550, p.y + 475 - 425, 555, 425);
-          //Rectangle area1 = new Rectangle(area);
-          //nt col = 4;
-          //area1.x = area.x + col * 110;
-          //area1.width = 110;
+          // Rectangle area = new Rectangle(p.x + 207 - 550, p.y + 475 - 425,
+          // 555, 425);
+          // Rectangle area1 = new Rectangle(area);
+          // nt col = 4;
+          // area1.x = area.x + col * 110;
+          // area1.width = 110;
           for (int j = 4; !found && j >= 0; j--) {
-            //area1.x = area.x + j * 110;
-            //area1.width = 110;
+            // area1.x = area.x + j * 110;
+            // area1.width = 110;
             // scanner.writeAreaTS(area1, "area" + j + i + ".bmp");
             System.err.println("area" + j + i + ".bmp");
             Pixel pp = scanner.scanOneFast(scanner.getImageData("sfBuild.bmp", scanner._scanArea, 0, 0), null, true);
@@ -1424,6 +1451,7 @@ public class MainFrame extends JFrame {
               time = 0l;
 
               // now find matches
+              mouse.delay(700);
               clickMatches(mcols, mrows, matrix, -1);
 
               mouse.delay(2000);
