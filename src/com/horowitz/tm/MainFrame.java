@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.31ss";
+  private static String APP_TITLE = "TM v0.32";
 
   private MouseRobot mouse;
 
@@ -727,8 +727,9 @@ public class MainFrame extends JFrame {
             mouse.click(p.x + 38, p.y + 103);
             mouse.delay(3000);
 
-            // scroller
-            mouse.click(p.x + 558, p.y + 355);
+            mouse.wheelDown(27);
+//            // scroller
+//            mouse.click(p.x + 558, p.y + 355);
             mouse.delay(2000);
             // p = scanner.scanOneFast("premiumFree2.bmp", scanner._scanArea,
             // false);
