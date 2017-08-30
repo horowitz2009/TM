@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
-  private static String APP_TITLE = "TM v0.31s";
+  private static String APP_TITLE = "TM v0.32";
 
   private MouseRobot mouse;
 
@@ -182,11 +182,13 @@ public class MainFrame extends JFrame {
       checkDuelsTask();
       sfTask();
       taskManager = new TaskManager(mouse);
+      taskManager.addTask(sponsorTask);
       taskManager.addTask(practiceTask);
       taskManager.addTask(pairsTask);
       taskManager.addTask(checkDuelsTask);
       taskManager.addTask(matchTask);
       taskManager.addTask(bankTask);
+      taskManager.addTask(sponsorTask);
 
       taskManager.addTask(sfTask);
       taskManager.addTask(premiumTask);
@@ -725,8 +727,9 @@ public class MainFrame extends JFrame {
             mouse.click(p.x + 38, p.y + 103);
             mouse.delay(3000);
 
-            // scroller
-            mouse.click(p.x + 558, p.y + 355);
+            mouse.wheelDown(27);
+//            // scroller
+//            mouse.click(p.x + 558, p.y + 355);
             mouse.delay(2000);
             // p = scanner.scanOneFast("premiumFree2.bmp", scanner._scanArea,
             // false);
@@ -771,11 +774,12 @@ public class MainFrame extends JFrame {
                 // 3RD SPONSOR
                 mouse.click(p.x, p.y + 303 + 105);
                 mouse.delay(3000);
-                LOGGER.info("sleep 2min");
-                sleep(2 * 60000);
+                LOGGER.info("sleep 30sec");
+                sleep(1 * 30000);
                 handlePopups();
               }
-            }
+            } else
+              sleep(1);
 
           } catch (IOException | AWTException e) {
             e.printStackTrace();
