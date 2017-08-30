@@ -298,7 +298,7 @@ public class MainFrame extends JFrame {
                 }
               }
 
-              if (!found) {
+              if (!found && settings.getBoolean("tasks.sf.build", false)) {
                 // look for build button
                 if (lookForBuild(p)) {
                   LOGGER.info("Summer: just built something...");
