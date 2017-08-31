@@ -71,7 +71,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v0.33a";
+  private static String APP_TITLE = "TM v0.33b";
 
   private MouseRobot mouse;
 
@@ -821,6 +821,9 @@ public class MainFrame extends JFrame {
               LOGGER.info("Go to club...");
               mouse.click(p.x, p.y);
               mouse.delay(3000);
+              checkForMoney();
+              checkForDuels();
+              clickBankDirectly();
               dragSE();
               mouse.delay(1200);
               checkForMoney();
@@ -832,6 +835,7 @@ public class MainFrame extends JFrame {
               checkForDuels();
               mouse.delay(500);
               dragN();
+              clickBankDirectly();
               mouse.delay(1200);
               checkForMoney();
               checkForDuels();
@@ -858,7 +862,9 @@ public class MainFrame extends JFrame {
         if (_clubToggle.isSelected()) {
           Pixel p = null;
           do {
-            p = scanner.scanOneFast("money.bmp", scanner._scanArea, true);
+            p = scanner.scanOneFast("money.bmp", scanner._fullArea, true);
+            if (p == null)
+              p = scanner.scanOneFast("money2.bmp", scanner._fullArea, true);
             LOGGER.info("money..." + p);
             if (p != null) {
               stats.register("Money");
@@ -872,7 +878,7 @@ public class MainFrame extends JFrame {
         if (_clubDuelsToggle.isSelected()) {
           Pixel p = null;
           do {
-            p = scanner.scanOneFast(scanner.getImageData("clubDuels.bmp", scanner._scanArea, 9, 17), scanner._scanArea,
+            p = scanner.scanOneFast(scanner.getImageData("clubDuels.bmp", scanner._fullArea, 9, 17), scanner._fullArea,
                 true);
             LOGGER.info("duels..." + p);
             if (p != null) {
@@ -2767,12 +2773,12 @@ public class MainFrame extends JFrame {
 
     boolean clubM = "true".equalsIgnoreCase(settings.getProperty("tasks.club.money"));
     if (clubM != _clubToggle.isSelected()) {
-      _clubToggle.setSelected(bank);
+      _clubToggle.setSelected(clubM);
     }
 
     boolean clubD = "true".equalsIgnoreCase(settings.getProperty("tasks.club.duels"));
     if (clubD != _clubDuelsToggle.isSelected()) {
-      _clubDuelsToggle.setSelected(bank);
+      _clubDuelsToggle.setSelected(clubD);
     }
 
     //
