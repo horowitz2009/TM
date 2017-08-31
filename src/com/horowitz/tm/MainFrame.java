@@ -300,7 +300,7 @@ public class MainFrame extends JFrame {
                 }
               }
 
-              if (!found) {
+              if (!found && settings.getBoolean("tasks.sf.build", false)) {
                 // look for build button
                 if (lookForBuild(p)) {
                   LOGGER.info("Summer: just built something...");
@@ -727,9 +727,9 @@ public class MainFrame extends JFrame {
             mouse.click(p.x + 38, p.y + 103);
             mouse.delay(3000);
 
-            mouse.wheelDown(27);
-            // // scroller
-            // mouse.click(p.x + 558, p.y + 355);
+            //mouse.wheelDown(27);
+            // scroller
+            mouse.click(p.x + 547, p.y + 355);
             mouse.delay(2000);
             // p = scanner.scanOneFast("premiumFree2.bmp", scanner._scanArea,
             // false);
