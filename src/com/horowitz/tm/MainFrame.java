@@ -29,7 +29,6 @@ import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -54,7 +53,6 @@ import javax.swing.JToolBar;
 
 import com.horowitz.commons.DateUtils;
 import com.horowitz.commons.GameErrorException;
-import com.horowitz.commons.ImageData;
 import com.horowitz.commons.MouseRobot;
 import com.horowitz.commons.MyImageIO;
 import com.horowitz.commons.MyLogger;
@@ -1413,18 +1411,20 @@ public class MainFrame extends JFrame {
                         mouse.delay(slow);
                       } else {
                         final Slot prevSlot = matrix.get(prev);
-                        mouse.delay(260);// was 600
+                        mouse.delay(550);// was 600
+                        slot.image = scanSlot(slot.area);
+                        prevSlot.image = scanSlot(prevSlot.area);
                         new Thread(new Runnable() {
                           public void run() {
                             try {
-                              // Thread.sleep(800);
+                              Thread.sleep(250);
                               if (PairsTools.areMatching(slot.area, prevSlot.area)) {
                                 prevSlot.active = false;
                                 slot.active = false;
                                 // scanned.remove(prevSlot);
                                 // scanned.remove(slot);
-                                time = System.currentTimeMillis() - 950;
-                                LOGGER.info("MATCH!!!");
+                                time = System.currentTimeMillis() - 550 - 250;
+                                LOGGER.info("MATCH2!!!");
                               }
                             } catch (Exception e) {
                               e.printStackTrace();
@@ -1432,9 +1432,7 @@ public class MainFrame extends JFrame {
 
                           }
                         }).start();
-                        mouse.delay(190);
-                        slot.image = scanSlot(slot.area);
-                        prevSlot.image = scanSlot(prevSlot.area);
+                                                
                         pairsScanned++;
                         addToScanned(prevSlot, slot);
 
