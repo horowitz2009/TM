@@ -69,8 +69,9 @@ import com.horowitz.ocr.OCRe;
 public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
+  private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v0.33";
+  private static String APP_TITLE = "TM v0.33a";
 
   private MouseRobot mouse;
 
@@ -94,6 +95,7 @@ public class MainFrame extends JFrame {
   private JToggleButton _clubToggle;
   private JToggleButton _clubDuelsToggle;
   private JToggleButton _sfToggle;
+
 
   private Task practiceTask;
   private Task sponsorTask;
@@ -132,14 +134,6 @@ public class MainFrame extends JFrame {
         }
       }
       MainFrame frame = new MainFrame(isTestmode);
-      frame.pack();
-      frame.setSize(new Dimension(frame.getSize().width + 8, frame.getSize().height + 8));
-      int w = 285;// frame.getSize().width;
-      final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-      int h = (int) (screenSize.height * 0.9);
-      int x = screenSize.width - w;
-      int y = (screenSize.height - h) / 2;
-      frame.setBounds(x, y, w, h);
 
       frame.setVisible(true);
     } catch (Throwable e) {
@@ -151,7 +145,6 @@ public class MainFrame extends JFrame {
   private void init() throws AWTException {
 
     try {
-
       // LOADING DATA
       settings = Settings.createSettings("tm.properties");
       if (!settings.containsKey("tasks.balls")) {
@@ -180,19 +173,21 @@ public class MainFrame extends JFrame {
       checkDuelsTask();
       sfTask();
       taskManager = new TaskManager(mouse);
-      taskManager.addTask(sponsorTask);
-      taskManager.addTask(practiceTask);
-      taskManager.addTask(pairsTask);
-      taskManager.addTask(checkDuelsTask);
-      taskManager.addTask(matchTask);
-      taskManager.addTask(bankTask);
-      taskManager.addTask(sponsorTask);
+      if (!SIMPLE) {
+        taskManager.addTask(sponsorTask);
+        taskManager.addTask(practiceTask);
+        taskManager.addTask(pairsTask);
+        taskManager.addTask(checkDuelsTask);
+        taskManager.addTask(matchTask);
+        taskManager.addTask(bankTask);
+        taskManager.addTask(sponsorTask);
 
-      taskManager.addTask(sfTask);
-      taskManager.addTask(premiumTask);
-      taskManager.addTask(sponsorTask);
-      taskManager.addTask(ballTask);
-      taskManager.addTask(clubTask);
+        taskManager.addTask(sfTask);
+        taskManager.addTask(premiumTask);
+        taskManager.addTask(sponsorTask);
+        taskManager.addTask(ballTask);
+        taskManager.addTask(clubTask);
+      }
       stopAllThreads = false;
 
     } catch (Exception e1) {
@@ -321,7 +316,8 @@ public class MainFrame extends JFrame {
 
       private boolean scanPlus(Rectangle area) throws RobotInterruptedException, AWTException, IOException {
         boolean found = false;
-        // scanner.writeAreaTS(area, "area.bmp");
+        if (settings.getBoolean("tasks.sf.writeArea", false))
+          scanner.writeAreaTS(area, "area.bmp");
         Pixel pp = scanner.scanOneFast(scanner.getImageData("sfPlus.bmp", area, 0, 0), null, true);
         if (pp != null) {
           // look for OK button
@@ -725,7 +721,7 @@ public class MainFrame extends JFrame {
             mouse.click(p.x + 38, p.y + 103);
             mouse.delay(3000);
 
-            //mouse.wheelDown(27);
+            // mouse.wheelDown(27);
             // scroller
             mouse.click(p.x + 547, p.y + 355);
             mouse.delay(2000);
@@ -1432,7 +1428,7 @@ public class MainFrame extends JFrame {
 
                           }
                         }).start();
-                                                
+
                         pairsScanned++;
                         addToScanned(prevSlot, slot);
 
@@ -1921,11 +1917,13 @@ public class MainFrame extends JFrame {
 
     JPanel toolbars = new JPanel(new GridLayout(0, 1));
     toolbars.add(mainToolbar1);
-    toolbars.add(mainToolbar2);
+    if (!SIMPLE)
+      toolbars.add(mainToolbar2);
 
     Box north = Box.createVerticalBox();
     north.add(toolbars);
-    north.add(createStatsPanel());
+    if (!SIMPLE)
+      north.add(createStatsPanel());
     rootPanel.add(north, BorderLayout.NORTH);
   }
 
@@ -2197,7 +2195,7 @@ public class MainFrame extends JFrame {
       @Override
       public void itemStateChanged(ItemEvent e) {
         boolean b = e.getStateChange() == ItemEvent.SELECTED;
-        LOGGER.info("Club Money: " + (b ? "on" : "off"));
+        LOGGER.info("Club Duels: " + (b ? "on" : "off"));
         settings.setProperty("tasks.club.duels", "" + b);
         settings.saveSettingsSorted();
 
@@ -2210,9 +2208,8 @@ public class MainFrame extends JFrame {
   private JToolBar createToolbar1() {
     JToolBar mainToolbar1 = new JToolBar();
     mainToolbar1.setFloatable(false);
-
     // SCAN
-    {
+    if (!SIMPLE) {
       AbstractAction action = new AbstractAction("Scan") {
         public void actionPerformed(ActionEvent e) {
           Thread myThread = new Thread(new Runnable() {
@@ -2232,7 +2229,7 @@ public class MainFrame extends JFrame {
       mainToolbar1.add(action);
     }
     // RUN MAGIC
-    {
+    if (!SIMPLE) {
       AbstractAction action = new AbstractAction("Do magic") {
 
         public void actionPerformed(ActionEvent e) {
@@ -2265,7 +2262,7 @@ public class MainFrame extends JFrame {
     }
 
     // Reset
-    {
+    if (!SIMPLE) {
       AbstractAction action = new AbstractAction("Reset") {
         public void actionPerformed(ActionEvent e) {
           Thread t = new Thread(new Runnable() {
@@ -2489,6 +2486,18 @@ public class MainFrame extends JFrame {
     // _testMode = isTestmode;
     setupLogger();
     init();
+    
+    pack();
+    setSize(new Dimension(getSize().width + 8, getSize().height + 8));
+    int w = 285;// frame.getSize().width;
+    final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+    int h = (int) (screenSize.height * 0.9);
+    if (SIMPLE)
+      h = 250;
+    int x = screenSize.width - w;
+    int y = (screenSize.height - h) / 2;
+    setBounds(x, y, w, h);
+
   }
 
   private void doMagic() {
