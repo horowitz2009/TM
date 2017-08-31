@@ -30,11 +30,11 @@ public class PairsTools {
 
     int r = 196;
     int g = 166;
-    int b = 79;
+    int b = 74;
     int offset = 20;
 
-    ColorFiltering colorFiltering = new ColorFiltering(new IntRange(r - offset, r + offset),
-        new IntRange(g - offset, g + offset), new IntRange(b - offset, b + offset));
+    ColorFiltering colorFiltering = new ColorFiltering(new IntRange(r - offset, r + offset), new IntRange(g - offset, g
+        + offset), new IntRange(b - offset, b + offset));
     colorFiltering.applyInPlace(fb);
     fb.toGrayscale();
     Threshold t = new Threshold(10);
@@ -44,7 +44,9 @@ public class PairsTools {
     int cnt1 = countPixels(fb);
 
     if (cnt1 > 100) {
-      colorFiltering = new ColorFiltering(new IntRange(250, 255), new IntRange(250, 255), new IntRange(250, 255));
+      offset = 5;
+      colorFiltering = new ColorFiltering(new IntRange(238 - offset, 255), new IntRange(233 - offset, 255),
+          new IntRange(228 - offset, 255));
       colorFiltering.applyInPlace(fb2);
       // fb2.saveAsBMP("hmm3.bmp");
       fb2.toGrayscale();
@@ -67,6 +69,11 @@ public class PairsTools {
       }
     }
     return cnt;
+  }
+
+  public static void main(String[] args) {
+    FastBitmap fb = new FastBitmap("images/hmm.bmp");
+    System.err.println(isBoom(fb));
   }
 
 }
