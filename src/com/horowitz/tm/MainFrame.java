@@ -71,7 +71,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v0.33b";
+  private static String APP_TITLE = "TM v0.33c";
 
   private MouseRobot mouse;
 
@@ -1226,7 +1226,9 @@ public class MainFrame extends JFrame {
                   captureScreen("ping/pairs ");
                   deleteOlder("ping", "pairs", -1, 24);
                   stats.register("Pairs");
-                  p = scanner.scanOneFast("ContinueBrown.bmp", scanner._scanArea, true);
+                  p = scanner.scanOneFast("ContinueBrown2.bmp", scanner._scanArea, true);
+                  if (p == null)
+                    p = scanner.scanOneFast("ContinueBrown.bmp", scanner._scanArea, true);
                   if (p == null) {
                     int xx = (scanner.getTopLeft().x + scanner.getGameWidth() / 2);
 
