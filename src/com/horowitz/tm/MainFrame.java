@@ -71,7 +71,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v0.33c";
+  private static String APP_TITLE = "TM v0.33d";
 
   private MouseRobot mouse;
 
@@ -1236,9 +1236,17 @@ public class MainFrame extends JFrame {
                     if (p != null) {
                       handleAwards();
                     } else {
+                      p = scanner.scanOneFast("PairsResultTitle.bmp", scanner._scanArea, true);
+                      if (p != null) {
+                        mouse.click(p.x + 52, p.y + 315);
+                        mouse.click(p.x + 202, p.y + 315);
+                        mouse.delay(5000);
+                        handleAwards();
+                      } else {
                       mouse.click(xx - 124, pq.y + 285 - 18);
                       mouse.click(xx - 62, pq.y + 285 - 18);
                       mouse.click(xx - 0, pq.y + 285 - 18);
+                      }
                       mouse.delay(3000);
                       refresh();
                     }
