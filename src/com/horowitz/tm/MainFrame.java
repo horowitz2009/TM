@@ -71,7 +71,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v0.33d";
+  private static String APP_TITLE = "TM v0.33e";
 
   private MouseRobot mouse;
 
@@ -500,7 +500,7 @@ public class MainFrame extends JFrame {
             }
 
             do {
-              scanner.scanOneFast(scanner.getImageData("centerCourt.bmp", scanner._scanArea, 0, 105), null, true);
+              scanner.scanOneFast(scanner.getImageData("centerCourt.bmp", scanner._scanArea, -100, 135), null, true);
               mouse.delay(3000);
               Pixel p = scanner.scanOneFast("centerCourtTitle.bmp", scanner._scanArea, false);
               if (p != null) {
