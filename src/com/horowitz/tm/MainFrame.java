@@ -71,7 +71,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v0.33e";
+  private static String APP_TITLE = "TM v0.33f";
 
   private MouseRobot mouse;
 
@@ -318,12 +318,12 @@ public class MainFrame extends JFrame {
         boolean found = false;
         if (settings.getBoolean("tasks.sf.writeArea", false))
           scanner.writeAreaTS(area, "area.bmp");
-        Pixel pp = scanner.scanOneFast(scanner.getImageData("sfPlus.bmp", area, 0, 0), null, true);
+        Pixel pp = scanner.scanOneFast(scanner.getImageData("sfPlus.bmp", area, 0, 0), area, true);
         if (pp != null) {
           // look for OK button
           mouse.mouseMove(scanner.getParkingPoint());
           mouse.delay(1000);
-          pp = scanner.scanOneFast(scanner.getImageData("sfOK.bmp", scanner._scanArea, 0, 0), null, true);
+          pp = scanner.scanOneFast(scanner.getImageData("sfOK.bmp", scanner._scanArea, 0, 0), scanner._scanArea, true);
           if (pp != null) {
             // we're done here
             LOGGER.info("Summer: started a part...");
