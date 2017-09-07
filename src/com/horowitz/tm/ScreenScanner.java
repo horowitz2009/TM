@@ -17,7 +17,6 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Handler;
-import java.util.logging.Logger;
 
 import javax.imageio.ImageIO;
 
@@ -32,8 +31,6 @@ import com.horowitz.commons.RobotInterruptedException;
 import com.horowitz.commons.Settings;
 
 public class ScreenScanner extends BaseScreenScanner {
-
-  private final static Logger LOGGER = Logger.getLogger("MAIN");
 
   private static final boolean DEBUG = false;
 
