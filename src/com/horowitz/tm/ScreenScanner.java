@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Handler;
@@ -22,21 +21,15 @@ import java.util.logging.Logger;
 
 import javax.imageio.ImageIO;
 
-import Catalano.Core.IntRange;
-import Catalano.Imaging.FastBitmap;
-import Catalano.Imaging.Filters.ColorFiltering;
-
 import com.horowitz.commons.BaseScreenScanner;
 import com.horowitz.commons.ImageComparator;
 import com.horowitz.commons.ImageData;
 import com.horowitz.commons.ImageManager;
 import com.horowitz.commons.ImageMask;
-import com.horowitz.commons.MouseRobot;
 import com.horowitz.commons.MyImageIO;
 import com.horowitz.commons.Pixel;
 import com.horowitz.commons.RobotInterruptedException;
 import com.horowitz.commons.Settings;
-import com.horowitz.commons.TemplateMatcher;
 
 public class ScreenScanner extends BaseScreenScanner {
 
@@ -44,11 +37,8 @@ public class ScreenScanner extends BaseScreenScanner {
 
   private static final boolean DEBUG = false;
 
-  public Rectangle _fullArea = null;
   public Rectangle _scanArea = null;
 
-  private Pixel _safePoint;
-  private Pixel _parkingPoint;
   private Rectangle _productionArea3;
   private Rectangle _productionArea2;
   private Rectangle _warehouseArea;;
@@ -91,15 +81,13 @@ public class ScreenScanner extends BaseScreenScanner {
     return super.generateWindowedArea(width, height);
   }
 
-  private void setKeyAreas() throws IOException, AWTException, RobotInterruptedException {
-
-    _optimized = true;
+  @Override
+  protected void setKeyAreas() throws IOException, AWTException, RobotInterruptedException {
+    super.setKeyAreas();
 
     _scanArea = new Rectangle(_tl.x + 120, _tl.y + 85, getGameWidth() - 120 - 120, getGameHeight() - 85 - 85);
     _fullArea = new Rectangle(_tl.x, _tl.y + 42, getGameWidth(), getGameHeight() - 42);
-    _parkingPoint = new Pixel(_br.x + 2, _tl.x + getGameHeight() / 2);
-    _safePoint = new Pixel(_parkingPoint);
-    
+
     getImageData("Continue.bmp", null, 19, 8);
 
   }
@@ -387,9 +375,6 @@ public class ScreenScanner extends BaseScreenScanner {
   public Pixel getSafePoint() {
     return _safePoint;
   }
-
-
-
 
   public boolean handlePopups() throws IOException, AWTException, RobotInterruptedException {
     boolean found = false;

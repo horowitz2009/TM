@@ -71,7 +71,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v0.33f";
+  private static String APP_TITLE = "TM v0.34";
 
   private MouseRobot mouse;
 
@@ -95,7 +95,6 @@ public class MainFrame extends JFrame {
   private JToggleButton _clubToggle;
   private JToggleButton _clubDuelsToggle;
   private JToggleButton _sfToggle;
-
 
   private Task practiceTask;
   private Task sponsorTask;
@@ -1243,9 +1242,9 @@ public class MainFrame extends JFrame {
                         mouse.delay(5000);
                         handleAwards();
                       } else {
-                      mouse.click(xx - 124, pq.y + 285 - 18);
-                      mouse.click(xx - 62, pq.y + 285 - 18);
-                      mouse.click(xx - 0, pq.y + 285 - 18);
+                        mouse.click(xx - 124, pq.y + 285 - 18);
+                        mouse.click(xx - 62, pq.y + 285 - 18);
+                        mouse.click(xx - 0, pq.y + 285 - 18);
                       }
                       mouse.delay(3000);
                       refresh();
@@ -2502,7 +2501,7 @@ public class MainFrame extends JFrame {
     // _testMode = isTestmode;
     setupLogger();
     init();
-    
+
     pack();
     setSize(new Dimension(getSize().width + 8, getSize().height + 8));
     int w = 285;// frame.getSize().width;
@@ -2669,6 +2668,9 @@ public class MainFrame extends JFrame {
         mouse.click(p.x + 16, p.y + 16);
         mouse.delay(200);
       }
+
+      scanner.handleFBMessages(true);
+      
       // found = found || scanner.scanOneFast("Continue.bmp", scanner._scanArea,
       // true) != null;
       // found = found || scanner.scanOneFast("ContinueBrown.bmp",
