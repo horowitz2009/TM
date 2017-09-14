@@ -29,6 +29,7 @@ import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -71,7 +72,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v0.34";
+  private static String APP_TITLE = "TM v0.35";
 
   private MouseRobot mouse;
 
@@ -1993,12 +1994,21 @@ public class MainFrame extends JFrame {
     _labels.put("Pairs", l);
     panel.add(l, gbc2);
 
-    // Stars
+    // Balls
     gbc.gridx += 2;
     gbc2.gridx += 2;
     panel.add(new JLabel("Balls:"), gbc);
     l = new JLabel(" ");
     _labels.put("Balls", l);
+    panel.add(l, gbc2);
+
+    // autoM
+    gbc.gridx += 2;
+    gbc2.gridx += 2;
+    panel.add(new JLabel("autoM:"), gbc);
+    l = new JLabel(" ");
+    _labels.put("autoM", l);
+
     panel.add(l, gbc2);
 
     // FAKE
@@ -2286,6 +2296,23 @@ public class MainFrame extends JFrame {
               stats.clear();
               taskManager.updateAll();
             }
+          });
+          t.start();
+        }
+
+      };
+      mainToolbar1.add(action);
+
+    }
+    // Auto matches
+    if (!SIMPLE) {
+      AbstractAction action = new AbstractAction("AutoM") {
+        public void actionPerformed(ActionEvent e) {
+          Thread t = new Thread(new Runnable() {
+            public void run() {
+              setAutoMatches();
+            }
+
           });
           t.start();
         }
@@ -2670,7 +2697,7 @@ public class MainFrame extends JFrame {
       }
 
       scanner.handleFBMessages(true);
-      
+
       // found = found || scanner.scanOneFast("Continue.bmp", scanner._scanArea,
       // true) != null;
       // found = found || scanner.scanOneFast("ContinueBrown.bmp",
@@ -3047,4 +3074,42 @@ public class MainFrame extends JFrame {
     handlePopups();
   }
 
+  public Calendar findNextMorningTime() {
+    Calendar cal = Calendar.getInstance();
+    // desired time: 6am
+    int h = cal.get(Calendar.HOUR_OF_DAY);
+    if (h > 6) {
+      cal.add(Calendar.DAY_OF_MONTH, 1);
+    }
+    cal.set(Calendar.HOUR_OF_DAY, 6);
+    cal.set(Calendar.MINUTE, 0);
+    cal.set(Calendar.SECOND, 0);
+    return cal;
+  }
+
+  private void setAutoMatches() {
+    if (!isRunning("AUTOM")) {
+      final Calendar when = findNextMorningTime();
+      Thread timer = new Thread(new Runnable() {
+        public void run() {
+          // desired time: 6am
+          long remaining = 0l;
+          do {
+            long now = System.currentTimeMillis();
+            remaining = when.getTimeInMillis() - now;
+            _labels.get("autoM").setText(DateUtils.fancyTime2(remaining, false));
+            try {
+              Thread.sleep(5000);
+            } catch (InterruptedException e) {
+            }
+          } while (remaining > 0);
+
+          // it's time
+          LOGGER.info("Turning matches off...");
+          _matchesToggle.setSelected(false);
+        }
+      }, "AUTOM");
+      timer.start();
+    }
+  }
 }
