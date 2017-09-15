@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v0.35";
+  private static String APP_TITLE = "TM v0.35sb";
 
   private MouseRobot mouse;
 
@@ -767,6 +767,9 @@ public class MainFrame extends JFrame {
                 mouse.delay(3500);
                 // 3RD SPONSOR
                 mouse.click(p.x, p.y + 303 + 105);
+                mouse.delay(3500);
+                // 4th SPONSOR
+                mouse.click(p.x + 357, p.y + 303 + 105);
                 mouse.delay(3000);
                 LOGGER.info("sleep 30sec");
                 sleep(1 * 30000);
@@ -1039,7 +1042,7 @@ public class MainFrame extends JFrame {
                 mouse.mouseMove(scanner.getParkingPoint());
                 // area.width = scanner.getGameWidth() - 500;
                 // area.x = scanner.getTopLeft().x;
-                clickBalls(area);
+                clickBalls(scanner._fullArea);
 
                 LOGGER.info("drag C");
                 mouse.dragFast(m.x + xx, m.y - yy, m.x, m.y, false, false);
