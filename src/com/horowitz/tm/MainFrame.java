@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v0.35sb";
+  private static String APP_TITLE = "TM v0.36";
 
   private MouseRobot mouse;
 
@@ -106,6 +106,7 @@ public class MainFrame extends JFrame {
   private Task bankTask;
   private Task pairsTask;
   private Task sfTask;
+  private Task rankingsTask;
 
   private TaskManager taskManager;
 
@@ -172,6 +173,7 @@ public class MainFrame extends JFrame {
       clubTask();
       checkDuelsTask();
       sfTask();
+      rankingsTask();
       taskManager = new TaskManager(mouse);
       if (!SIMPLE) {
         taskManager.addTask(sponsorTask);
@@ -187,6 +189,7 @@ public class MainFrame extends JFrame {
         taskManager.addTask(sponsorTask);
         taskManager.addTask(ballTask);
         taskManager.addTask(clubTask);
+        taskManager.addTask(rankingsTask);
       }
       stopAllThreads = false;
 
@@ -225,6 +228,77 @@ public class MainFrame extends JFrame {
 
   private long lastTime = 0;
 
+  private void rankingsTask() {
+    // rankingsWindow.bmp
+    // rankingsCup.bmp
+    rankingsTask = new Task("Rankings check", 1);
+    rankingsTask.setProtocol(new AbstractGameProtocol() {
+
+      @Override
+      public void execute() throws RobotInterruptedException, GameErrorException {
+
+        handlePopups();
+
+        try {
+          int x = scanner.getTopLeft().x + scanner.getGameWidth() / 2;
+          int y = scanner.getTopLeft().y;
+          Rectangle area = new Rectangle(x - 50, y, 170, 50);
+          Pixel p = scanner.scanOneFast("rankingsCup.bmp", area, false);
+          if (p != null) {
+            mouse.click(p.x + 25, p.y + 10);
+          } else {
+            // click blindly
+            mouse.click(x + 137, y + 24);
+          }
+          mouse.delay(3000);
+
+          p = scanner.scanOneFast("rankingsWindow.bmp", scanner._scanArea, false);
+          if (p != null) {
+            // we're in the jazz
+            LOGGER.info("rankings check...");
+
+            // practice -> pairs
+            mouse.click(p.x + 429, p.y - 104);
+            mouse.delay(2000);
+            p.x -= 97;
+            p.y -= 176;
+            mouse.click(p.x + 775, p.y + 172);
+            mouse.delay(2000);
+            
+            captureScreen("ping/rankings pairs1 ");
+            //click the scroller and capture again
+            int x1 = p.x + 736;
+            int y1 = p.y + 138;
+            mouse.dragFast(x1, y1, x1, y1 + 240, false, false);
+            mouse.delay(1000);
+            captureScreen("ping/rankings pairs2 ");
+            
+            deleteOlder("ping", "rankings", -1, 24);
+          }
+          
+          boolean itsTime = false;
+          
+          Calendar cal = Calendar.getInstance();
+          // 15min before 4am
+          int h = cal.get(Calendar.HOUR_OF_DAY);
+          
+          if (h == 3) {
+            int m = cal.get(Calendar.MINUTE);
+            if (m >= 44 && m <=59)
+            itsTime = true;
+          }
+          int mm = itsTime ? 1 : 15;
+          LOGGER.info("rankings: sleep " + mm + " minutes");
+          sleep(mm * 60000);
+
+        } catch (AWTException e) {
+        } catch (IOException e) {
+        }
+
+      }
+    });
+  }
+
   private void sfTask() {
     sfTask = new Task("Summer Fiesta", 1);
     sfTask.setProtocol(new AbstractGameProtocol() {
@@ -244,6 +318,16 @@ public class MainFrame extends JFrame {
             if (p != null) {
               // GOOOOOOOD!
               LOGGER.info("Summer Fiesta...");
+
+              if (settings.getBoolean("tasks.sf.build", false)) {
+                // look for build button
+                if (lookForBuild(p)) {
+                  LOGGER.info("Summer: just built something...");
+                  captureScreen("ping/summer build ");
+                  mouse.delay(3000);
+                }
+              }
+
               // drag to the end
               int x1 = p.x + 557;
               int y1 = p.y + 75;
@@ -293,13 +377,6 @@ public class MainFrame extends JFrame {
                 }
               }
 
-              if (!found && settings.getBoolean("tasks.sf.build", false)) {
-                // look for build button
-                if (lookForBuild(p)) {
-                  LOGGER.info("Summer: just built something...");
-                  captureScreen("ping/summer build ");
-                }
-              }
               deleteOlder("ping", "summer", -1, 24);
 
             }
@@ -356,7 +433,7 @@ public class MainFrame extends JFrame {
             // area1.x = area.x + j * 110;
             // area1.width = 110;
             // scanner.writeAreaTS(area1, "area" + j + i + ".bmp");
-            System.err.println("area" + j + i + ".bmp");
+            //System.err.println("area" + j + i + ".bmp");
             Pixel pp = scanner.scanOneFast(scanner.getImageData("sfBuild.bmp", scanner._scanArea, 0, 0), null, true);
             if (pp != null) {
               // look for OK button
