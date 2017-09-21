@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v0.37";
+  private static String APP_TITLE = "TM v0.37a";
 
   private MouseRobot mouse;
 
