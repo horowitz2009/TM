@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v0.37ex";
+  private static String APP_TITLE = "TM v0.37";
 
   private MouseRobot mouse;
 
@@ -435,12 +435,12 @@ public class MainFrame extends JFrame {
           // nt col = 4;
           // area1.x = area.x + col * 110;
           // area1.width = 110;
-          for (int j = 4; !found && j >= 0; j--) {
+          {//for (int j = 4; !found && j >= 0; j--) {
             // area1.x = area.x + j * 110;
             // area1.width = 110;
-            // scanner.writeAreaTS(area1, "area" + j + i + ".bmp");
+            //scanner.writeAreaTS(scanner._scanArea, "area" + j + i + ".bmp");
             // System.err.println("area" + j + i + ".bmp");
-            Pixel pp = scanner.scanOneFast(scanner.getImageData("sfBuild.bmp", scanner._scanArea, 0, 0), null, true);
+            Pixel pp = scanner.scanOne(scanner.getImageData("sfBuild.bmp", scanner._scanArea, 0, 0), null, true);
             if (pp != null) {
               // look for OK button
               mouse.mouseMove(scanner.getParkingPoint());
