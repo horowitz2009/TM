@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v0.37b";
+  private static String APP_TITLE = "TM v0.37c";
 
   private MouseRobot mouse;
 
@@ -773,7 +773,7 @@ public class MainFrame extends JFrame {
               slot = 2;
             }
             
-            if (max > 35) {
+            if (max > 35 && max < 400) {
               // good
             } else {
               slot = -1;
