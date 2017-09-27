@@ -773,7 +773,7 @@ public class MainFrame extends JFrame {
               slot = 2;
             }
             
-            if (max > 35 && max < 400) {
+            if (max > settings.getInt("tasks.matches.minDiff", 40) && max < settings.getInt("tasks.matches.maxDiff", 400)) {
               // good
             } else {
               slot = -1;
