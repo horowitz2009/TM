@@ -35,6 +35,7 @@ public class ScreenScanner extends BaseScreenScanner {
   private static final boolean DEBUG = false;
 
   public Rectangle _scanArea = null;
+  public Rectangle _scanAreaC = null;
 
   private Rectangle _productionArea3;
   private Rectangle _productionArea2;
@@ -83,6 +84,7 @@ public class ScreenScanner extends BaseScreenScanner {
     super.setKeyAreas();
 
     _scanArea = new Rectangle(_tl.x + 120, _tl.y + 85, getGameWidth() - 120 - 120, getGameHeight() - 85 - 85);
+    _scanAreaC = new Rectangle(_tl.x + 120, _tl.y + 85, getGameWidth() - 120 - 120, getGameHeight() - 85 - 164);
     _fullArea = new Rectangle(_tl.x, _tl.y + 42, getGameWidth(), getGameHeight() - 42);
 
     getImageData("Continue.bmp", null, 19, 8);
