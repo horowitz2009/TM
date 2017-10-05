@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v0.38";
+  private static String APP_TITLE = "TM v0.39";
 
   private MouseRobot mouse;
 
@@ -894,17 +894,24 @@ public class MainFrame extends JFrame {
               mouse.delay(3000);
               p = scanner.scanOneFast("Rocky.bmp", scanner._scanArea, false);
               if (p != null) {
+                int n = settings.getInt("tasks.sponsors.number", 1);
                 LOGGER.info("sponsor opened");
                 mouse.click(p.x, p.y + 303);
                 mouse.delay(3500);
-                mouse.click(p.x + 357, p.y + 303);
-                mouse.delay(3500);
-                // 3RD SPONSOR
-                mouse.click(p.x, p.y + 303 + 105);
-                mouse.delay(3500);
-                // 4th SPONSOR
-                mouse.click(p.x + 357, p.y + 303 + 105);
-                mouse.delay(3000);
+                if (n > 1) {
+                  mouse.click(p.x + 357, p.y + 303);
+                  mouse.delay(3500);
+                  if (n > 2) {
+                    // 3RD SPONSOR
+                    mouse.click(p.x, p.y + 303 + 105);
+                    mouse.delay(3500);
+                    if (n > 3) {
+                      // 4th SPONSOR
+                      mouse.click(p.x + 357, p.y + 303 + 105);
+                      mouse.delay(3000);
+                    }
+                  }
+                }
                 LOGGER.info("sleep 30sec");
                 sleep(1 * 30000);
                 handlePopups();
