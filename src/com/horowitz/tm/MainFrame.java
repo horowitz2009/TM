@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v0.39";
+  private static String APP_TITLE = "TM v40";
 
   private MouseRobot mouse;
 
@@ -480,9 +480,21 @@ public class MainFrame extends JFrame {
             // check duels here
             int x = scanner.getTopLeft().x + scanner.getGameWidth() / 2;
             int y = scanner.getTopLeft().y + 20;
+            Rectangle area = new Rectangle(x - 170, y - 20, 170*2, 40);
+            //scanner.writeAreaTS(area, "racketArea.bmp");
+            Pixel p = scanner.scanOneFast("racketAnchor2.bmp", area, false);
+            if (p != null) {
+              x = p.x + 63;
+              y = p.y + 11;
+            } else {
+              LOGGER.info("racket not found...");
+              if (settings.getBoolean("pro", false)) {
+                x -= 70;
+              }
+            }
             mouse.mouseMove(x, y);
 
-            Rectangle area = new Rectangle(x - 52, y - 8, 80, 13);
+            area = new Rectangle(x - 52, y - 8, 80, 13);
             // scanner.writeArea(area, "duels.bmp");
             duelsChecked = false;
             duelsFull = false;
@@ -542,7 +554,7 @@ public class MainFrame extends JFrame {
               // }
               mouse.delay(2000);
               LOGGER.info("check duels...");
-              Pixel p = scanner.scanOneFast("DuelsClock.bmp", new Rectangle(x - 70, y, 140, 67), false);
+              p = scanner.scanOneFast("DuelsClock.bmp", new Rectangle(x - 70, y, 140, 67), false);
               if (p == null) {
                 LOGGER.info("DUELS FULL");
                 duelsFull = true;
