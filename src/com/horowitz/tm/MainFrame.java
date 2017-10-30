@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v41";
+  private static String APP_TITLE = "TM v42";
 
   private MouseRobot mouse;
 
@@ -1121,24 +1121,12 @@ public class MainFrame extends JFrame {
       // both directions
     }
 
-    // hmm
+    //split the drag into two parts using the safer area in the center
+    xx /= 2;
+    yy /= 2;
     Pixel pp = new Pixel(m.x + xx * x1, m.y + yy * y1);
-    if (!scanner.isPixelInArea(pp, scanner._scanAreaC)) {
-      if (pp.y > m.y) {
-        pp.y -= 100;
-        yy += 100;
-      } else {
-        pp.y += 100;
-        yy += 100;
-      }
-      if (pp.x > m.x) {
-        pp.x -= 100;
-        xx += 100;
-      } else {
-        pp.x += 100;
-        xx += 100;
-      }
-    }
+    mouse.dragFast(pp.x, pp.y, m.x + xx * x2, m.y + yy * y2, false, false);
+    mouse.delay(200);
     mouse.dragFast(pp.x, pp.y, m.x + xx * x2, m.y + yy * y2, false, false);
     mouse.delay(200);
     mouse.mouseMove(scanner.getParkingPoint());
@@ -1207,20 +1195,15 @@ public class MainFrame extends JFrame {
 
       private void clickBalls(Rectangle area) throws RobotInterruptedException, IOException, AWTException {
         int limit = settings.getInt("balls.limit", 0);
-        if (limit > 0 && ballsCnt < limit || limit <= 0) {
-          mouse.delay(500);
-          Pixel p = scanner.scanOneFast("ball.bmp", area, true);
-          if (p != null) {
-            ballsCnt++;
-            stats.register("Balls");
-          }
+        Pixel p = null;
+        do {
           p = scanner.scanOneFast("ball.bmp", area, true);
           if (p != null) {
-            ballsCnt++;
             stats.register("Balls");
-            mouse.delay(1000);
+            ballsCnt++;
+            mouse.delay(200);
           }
-        }
+        } while (p != null && (ballsCnt <= limit || limit <= 0));
       }
     });
   }
