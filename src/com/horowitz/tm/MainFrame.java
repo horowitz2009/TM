@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v42";
+  private static String APP_TITLE = "TM v43";
 
   private MouseRobot mouse;
 
@@ -480,8 +480,8 @@ public class MainFrame extends JFrame {
             // check duels here
             int x = scanner.getTopLeft().x + scanner.getGameWidth() / 2;
             int y = scanner.getTopLeft().y + 20;
-            Rectangle area = new Rectangle(x - 170, y - 20, 170*2, 40);
-            //scanner.writeAreaTS(area, "racketArea.bmp");
+            Rectangle area = new Rectangle(x - 170, y - 20, 170 * 2, 40);
+            // scanner.writeAreaTS(area, "racketArea.bmp");
             Pixel p = scanner.scanOneFast("racketAnchor2.bmp", area, false);
             if (p != null) {
               x = p.x + 63;
@@ -1121,7 +1121,7 @@ public class MainFrame extends JFrame {
       // both directions
     }
 
-    //split the drag into two parts using the safer area in the center
+    // split the drag into two parts using the safer area in the center
     xx /= 2;
     yy /= 2;
     Pixel pp = new Pixel(m.x + xx * x1, m.y + yy * y1);
@@ -1448,7 +1448,7 @@ public class MainFrame extends JFrame {
         int mwidth = mcols * (slotSize + gapx) - gapx;
         int mheight = mrows * (slotSize + gapy) - gapy;
         Rectangle gameArea = new Rectangle(p.x + 119, p.y + 123, mwidth, mheight);
-        
+
         boolean can = false;
         do {
           int slotsNumber = 0;
@@ -1473,7 +1473,6 @@ public class MainFrame extends JFrame {
 
       return started;
     }
-    
 
     private int workPairs(final Pixel pp, int slotSize, int gapx, int gapy, Rectangle gameArea) {
       int slotsNumber = mrows * mcols;
@@ -1488,8 +1487,8 @@ public class MainFrame extends JFrame {
         for (int row = 1; row <= mrows; row++) {
           for (int col = 1; col <= mcols; col++) {
             Slot slot = new Slot(row, col, true);
-            Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gapx) + 20, gameArea.y
-                + (row - 1) * (slotSize + gapy) + 20, 40, 40);
+            Rectangle slotArea = new Rectangle(gameArea.x + (col - 1) * (slotSize + gapx) + 20, gameArea.y + (row - 1)
+                * (slotSize + gapy) + 20, 40, 40);
             slot.area = slotArea;
             matrix.put(slot.coords, slot);
           }
@@ -2436,7 +2435,6 @@ public class MainFrame extends JFrame {
       mainToolbar1.add(action);
     }
 
-    
     // Reset
     if (!SIMPLE) {
       AbstractAction action = new AbstractAction("Reset") {
@@ -2737,37 +2735,36 @@ public class MainFrame extends JFrame {
   }
 
   private void refresh() {
-    LOGGER.info("refresh...");
-    mouse.click(scanner.getParkingPoint());
     try {
-      Robot robot = new Robot();
-      robot.keyPress(KeyEvent.VK_F5);
-      robot.keyRelease(KeyEvent.VK_F5);
-    } catch (AWTException e) {
+      refresh(false);
+    } catch (AWTException | IOException | RobotInterruptedException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
     }
-
-    try {
-      Thread.sleep(8000);
-    } catch (InterruptedException e) {
-    }
-    LOGGER.info("refresh done");
-
+    // LOGGER.info("refresh...");
+    // mouse.click(scanner.getParkingPoint());
+    // try {
+    // Robot robot = new Robot();
+    // robot.keyPress(KeyEvent.VK_F5);
+    // robot.keyRelease(KeyEvent.VK_F5);
+    // } catch (AWTException e) {
+    // }
+    //
+    // try {
+    // Thread.sleep(8000);
+    // } catch (InterruptedException e) {
+    // }
+    // LOGGER.info("refresh done");
+    //
   }
 
   private void refresh(boolean bookmark) throws AWTException, IOException, RobotInterruptedException {
     deleteOlder(".", "refresh", 5, -1);
     LOGGER.info("Time to refresh...");
-    scanner.captureGameArea("refresh ");
+    //scanner.captureGameArea("refresh ");
     Pixel p;
     if (!bookmark) {
-      if (scanner.isOptimized()) {
-        p = scanner.getBottomRight();
-        p.y += 4;
-        p.x -= 4;
-      } else {
-        p = new Pixel(0, 510);
-      }
-      mouse.click(p.x, p.y);
+      mouse.click(scanner.getParkingPoint());
       try {
         Robot robot = new Robot();
         robot.keyPress(KeyEvent.VK_F5);
@@ -2775,7 +2772,7 @@ public class MainFrame extends JFrame {
       } catch (AWTException e) {
       }
       try {
-        Thread.sleep(15000);
+        Thread.sleep(8000);
       } catch (InterruptedException e) {
       }
       // scanner.reset();
@@ -2797,17 +2794,17 @@ public class MainFrame extends JFrame {
         } else {
           processRequests();
         }
-        if (i > 8) {
-          captureScreen("refresh trouble ");
-        }
+//        if (i > 8) {
+//          captureScreen("refresh trouble ");
+//        }
       }
-      if (done) {
-        // runMagic();
-        captureScreen("refresh done ");
-      } else {
-        // blah
-        // try bookmark
-      }
+//      if (done) {
+//        // runMagic();
+//        captureScreen("refresh done ");
+//      } else {
+//        // blah
+//        // try bookmark
+//      }
 
       // not sure why shipsTasks gets off after refresh
       reapplySettings();
@@ -3221,6 +3218,29 @@ public class MainFrame extends JFrame {
     if (p != null) {
       mouse.click(p.x - 194, p.y + 368);
       mouse.delay(1500);
+    } else {
+      // we have problem finding the bank
+      // try with image
+      new Robot().mouseWheel(-3);
+      mouse.delay(500);
+      
+      
+      refresh();
+      final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+      Rectangle area = new Rectangle(screenSize);
+      area.width /= 2;
+      area.height /= 3;
+      area.x += area.width - 1;
+      p = scanner.scanOneFast("bankAnchor.bmp", area, false);
+      if (p != null) {
+        mouse.click(p.x + 9, p.y + 12);
+        mouse.delay(1500);
+        p = scanner.scanOneFast("Finances.bmp", scanner._scanArea, false);
+        if (p != null) {
+          mouse.click(p.x - 194, p.y + 368);
+          mouse.delay(1500);
+        }
+      }
     }
     handlePopups();
   }
