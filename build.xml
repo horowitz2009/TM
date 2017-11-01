@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <project default="copy-jar" name="Create Runnable Jar for Project Daze">
 
-	<property name="versionNumber" value="43" />
+	<property name="versionNumber" value="43a" />
 
 	<property name="jarname" value="TM${versionNumber}.jar" description="" />
 	<property name="dropboxjarname" value="DropboxRemote${versionNumber}.jar" description="" />
@@ -13,7 +13,7 @@
 		<jar destfile="${jarname}">
 			<manifest>
 				<attribute name="Main-Class" value="com.horowitz.tm.MainFrame" />
-				<attribute name="Class-Path" value=". lib/horowitz-commons-1.12.jar lib/commons-lang-2.1.jar lib/json-simple-1.1.1.jar lib/gson-2.3.jar lib/commons-io-2.4.jar" />
+				<attribute name="Class-Path" value=". lib/horowitz-commons-1.13.jar lib/commons-lang-2.1.jar lib/json-simple-1.1.1.jar lib/gson-2.3.jar lib/commons-io-2.4.jar" />
 			</manifest>
 			<fileset dir="bin" /> <!-- excludes="**/MainFrame.class" -->
 		</jar>
