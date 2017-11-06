@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v44";
+  private static String APP_TITLE = "TM v45";
 
   private MouseRobot mouse;
 
@@ -637,9 +637,11 @@ public class MainFrame extends JFrame {
                       deleteOlder("ping", "match", -1, 24);
                     }
 
-                    p = scanner.scanOneFast("Continue.bmp", scanner._scanArea, true);
+                    Rectangle area = scanner._scanArea;
+                    if (pv != null)
+                      area = new Rectangle(pv.x, pv.y + 380, 280, 45);
+                    p = scanner.scanOneFast("Continue.bmp", area, true);
                     if (p == null && won) {
-                      Rectangle area = new Rectangle(pv.x, pv.y + 380, 170, 60);
                       p = null;// scanner.scanOne("PrizeMatches.bmp", area,
                                // true);
 
@@ -648,13 +650,16 @@ public class MainFrame extends JFrame {
                         mouse.delay(300);
                       }
                       handleAwards();
+                      clickBankDirectly();
                     }
 
                     if (p != null) {
-                      handlePopups();
-                      mouse.delay(1000);
+                      mouse.delay(333);
+                      clickBankDirectly();
                     }
-                    clickBankDirectly();
+                    handlePopups();
+                    mouse.delay(1000);
+                    // clickBankDirectly();
 
                   }
                   matches++;
@@ -807,7 +812,7 @@ public class MainFrame extends JFrame {
             mouse.click(pq.x + 198, pq.y + 209);
             mouse.click(pq.x + 198, pq.y + 257);
             LOGGER.info("match");
-            mouse.delay(5000);
+            mouse.delay(1500);
             return 1;// job well done
           } else
             return 0;// no duels, so sleep
@@ -977,36 +982,55 @@ public class MainFrame extends JFrame {
               LOGGER.info("Go to club...");
               mouse.click(p.x, p.y);
               mouse.delay(3500);
-              LOGGER.info("scan...");
-              if (checkForMoney())
+              p = null;
+              if (settings.getBoolean("tasks.club.premium", false)) {
+                Rectangle area = new Rectangle(scanner._fullArea);
+                area.y = scanner._br.y - 187;
+                area.height = 187;
+                area.x += 350;
+                area.width -= (350 + 250);
+                p = scanner.scanOneFast("clubClaim.bmp", area, false);
+                if (p != null) {
+                  mouse.click(p.x + 20, p.y + 12);
+                  mouse.delay(2400);
+                  clickBankDirectly();
+                  mouse.delay(2400);
+                  clickBankDirectly();
+                  
+                }
+              }
+              
+              if (p == null) {
+                LOGGER.info("scan...");
+                if (checkForMoney())
+                  clickBankDirectly();
+                checkForDuels();
+
+                dragSE();
+                mouse.delay(1200);
+                if (checkForMoney())
+                  clickBankDirectly();
+                checkForDuels();
+
+                dragW();
+                mouse.delay(1200);
+                if (checkForMoney())
+                  clickBankDirectly();
+                checkForDuels();
+
+                dragN();
+                mouse.delay(1200);
+                if (checkForMoney())
+                  clickBankDirectly();
+                checkForDuels();
+
+                dragE();
+                mouse.delay(1200);
+                checkForMoney();
+                checkForDuels();
+
                 clickBankDirectly();
-              checkForDuels();
-
-              dragSE();
-              mouse.delay(1200);
-              if (checkForMoney())
-                clickBankDirectly();
-              checkForDuels();
-
-              dragW();
-              mouse.delay(1200);
-              if (checkForMoney())
-                clickBankDirectly();
-              checkForDuels();
-
-              dragN();
-              mouse.delay(1200);
-              if (checkForMoney())
-                clickBankDirectly();
-              checkForDuels();
-
-              dragE();
-              mouse.delay(1200);
-              checkForMoney();
-              checkForDuels();
-
-              clickBankDirectly();
-
+              }
               // refresh
               sleep(15 * 60000);
               refresh();
@@ -1398,7 +1422,7 @@ public class MainFrame extends JFrame {
     }
 
     private Rectangle clockArea;
-    
+
     private Pixel pairsStarted() throws AWTException, RobotInterruptedException, IOException {
       Pixel p = null;
       boolean started = false;
@@ -1457,13 +1481,13 @@ public class MainFrame extends JFrame {
           int mheight = mrows * (slotSize + gapy) - gapy;
           Rectangle gameArea = new Rectangle(p.x + 119, p.y + 123, mwidth, mheight);
 
-          //do pairs
+          // do pairs
           int slotsNumber = 0;
           do {
             slotsNumber = workPairs(pp, slotSize, gapx, gapy, gameArea);
           } while (slotsNumber > 0);
 
-          //repeat?
+          // repeat?
           can = false;
           if (settings.getBoolean("tasks.pairs.repeat", false)) {
             mouse.delay(3000);
@@ -1478,14 +1502,14 @@ public class MainFrame extends JFrame {
               LOGGER.info("done.");
             }
           }
-          
+
         } else {
-          //no energy or other problem
+          // no energy or other problem
           return false;
         }
       } while (can);
-      
-      //at least once the pairs have been played
+
+      // at least once the pairs have been played
       return true;
     }
 
@@ -2776,7 +2800,7 @@ public class MainFrame extends JFrame {
   private void refresh(boolean bookmark) throws AWTException, IOException, RobotInterruptedException {
     deleteOlder(".", "refresh", 5, -1);
     LOGGER.info("Time to refresh...");
-    //scanner.captureGameArea("refresh ");
+    // scanner.captureGameArea("refresh ");
     Pixel p;
     if (!bookmark) {
       mouse.click(scanner.getParkingPoint());
@@ -2809,17 +2833,17 @@ public class MainFrame extends JFrame {
         } else {
           processRequests();
         }
-//        if (i > 8) {
-//          captureScreen("refresh trouble ");
-//        }
+        // if (i > 8) {
+        // captureScreen("refresh trouble ");
+        // }
       }
-//      if (done) {
-//        // runMagic();
-//        captureScreen("refresh done ");
-//      } else {
-//        // blah
-//        // try bookmark
-//      }
+      // if (done) {
+      // // runMagic();
+      // captureScreen("refresh done ");
+      // } else {
+      // // blah
+      // // try bookmark
+      // }
 
       // not sure why shipsTasks gets off after refresh
       reapplySettings();
@@ -3238,8 +3262,7 @@ public class MainFrame extends JFrame {
       // try with image
       new Robot().mouseWheel(-3);
       mouse.delay(500);
-      
-      
+
       refresh();
       final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
       Rectangle area = new Rectangle(screenSize);
