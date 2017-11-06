@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v45";
+  private static String APP_TITLE = "TM v46";
 
   private MouseRobot mouse;
 
@@ -996,11 +996,8 @@ public class MainFrame extends JFrame {
                   clickBankDirectly();
                   mouse.delay(2400);
                   clickBankDirectly();
-                  
                 }
-              }
-              
-              if (p == null) {
+              } else {
                 LOGGER.info("scan...");
                 if (checkForMoney())
                   clickBankDirectly();
