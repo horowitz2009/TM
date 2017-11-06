@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v43";
+  private static String APP_TITLE = "TM v44";
 
   private MouseRobot mouse;
 
@@ -1398,11 +1398,11 @@ public class MainFrame extends JFrame {
     }
 
     private Rectangle clockArea;
-
-    public boolean doPairs() throws RobotInterruptedException, IOException, AWTException {
+    
+    private Pixel pairsStarted() throws AWTException, RobotInterruptedException, IOException {
+      Pixel p = null;
       boolean started = false;
       int turn = 0;
-      Pixel p = null;
       do {
         turn++;
         p = scanner.scanOneFast("clockAnchor.bmp", scanner._fullArea, false);
@@ -1431,31 +1431,39 @@ public class MainFrame extends JFrame {
               clockArea = new Rectangle(pp3.x - 1, pp3.y - 1, 18, 27);
             }
           }
-          break;
+          return p;
         } else
           mouse.delay(400);
       } while (!started && turn < 12);
 
-      if (started) {
-        time = 0;
-        final Pixel pp = p;
-        // good
-        int slotSize = 80;
-        int gapx = 12;
-        int gapy = 10;
-        mcols = 8;
-        mrows = 4;
-        int mwidth = mcols * (slotSize + gapx) - gapx;
-        int mheight = mrows * (slotSize + gapy) - gapy;
-        Rectangle gameArea = new Rectangle(p.x + 119, p.y + 123, mwidth, mheight);
+      return null;
+    }
 
-        boolean can = false;
-        do {
+    public boolean doPairs() throws RobotInterruptedException, IOException, AWTException {
+      boolean can = false;
+      do {
+        Pixel p = pairsStarted();
+        if (p != null) {
+
+          time = 0;
+          final Pixel pp = p;
+          // good
+          int slotSize = 80;
+          int gapx = 12;
+          int gapy = 10;
+          mcols = 8;
+          mrows = 4;
+          int mwidth = mcols * (slotSize + gapx) - gapx;
+          int mheight = mrows * (slotSize + gapy) - gapy;
+          Rectangle gameArea = new Rectangle(p.x + 119, p.y + 123, mwidth, mheight);
+
+          //do pairs
           int slotsNumber = 0;
           do {
             slotsNumber = workPairs(pp, slotSize, gapx, gapy, gameArea);
           } while (slotsNumber > 0);
 
+          //repeat?
           can = false;
           if (settings.getBoolean("tasks.pairs.repeat", false)) {
             mouse.delay(3000);
@@ -1463,15 +1471,22 @@ public class MainFrame extends JFrame {
             Pixel p2 = scanner.scanOneFast("replayButton.bmp", scanner._scanArea, false);
             if (p2 != null) {
               mouse.click(p2.x, p2.y + 17);
-              mouse.delay(3000);
-              LOGGER.info("PLAY AGAIN...");
+              LOGGER.info("PLAY AGAIN in 4s");
+              mouse.delay(4000);
               can = true;
+            } else {
+              LOGGER.info("done.");
             }
           }
-        } while (can);
-      }
-
-      return started;
+          
+        } else {
+          //no energy or other problem
+          return false;
+        }
+      } while (can);
+      
+      //at least once the pairs have been played
+      return true;
     }
 
     private int workPairs(final Pixel pp, int slotSize, int gapx, int gapy, Rectangle gameArea) {
