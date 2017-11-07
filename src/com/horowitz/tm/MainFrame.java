@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v46";
+  private static String APP_TITLE = "TM v46a";
 
   private MouseRobot mouse;
 
@@ -640,23 +640,39 @@ public class MainFrame extends JFrame {
                     Rectangle area = scanner._scanArea;
                     if (pv != null)
                       area = new Rectangle(pv.x, pv.y + 380, 280, 45);
-                    p = scanner.scanOneFast("Continue.bmp", area, true);
-                    if (p == null && won) {
-                      p = null;// scanner.scanOne("PrizeMatches.bmp", area,
-                               // true);
-
-                      if (p == null) {
-                        mouse.click(pv.x + 129, pv.y + 410);
-                        mouse.delay(300);
+                    
+                    int turns = 0;
+                    int solution = 0;
+                    do {
+                      p = scanner.scanOneFast("Continue.bmp", area, false);
+                      if (p != null) {
+                        mouse.click(p.x + 13, p.y + 13);
+                        solution = 1;
+                      } else {
+                        p = scanner.scanOneFast("grandPrizeMIN.bmp", area, false);
+                        if (p != null) {
+                          mouse.click(p.x + 13, p.y + 13);
+                          solution = 2;
+                        }
                       }
+                      if (solution == 0)
+                        mouse.delay(333);
+                    } while (turns < 3 && solution == 0);
+                    
+                    if (solution == 2) {
+                      //awards
+                      handleAwards();
+                      clickBankDirectly();
+                    } else if (solution == 1) {
+                      clickBankDirectly();
+                    } else {
+                      //damn it! no button found 
+                      mouse.click(pv.x + 129, pv.y + 410);
+                      mouse.delay(300);
                       handleAwards();
                       clickBankDirectly();
                     }
-
-                    if (p != null) {
-                      mouse.delay(333);
-                      clickBankDirectly();
-                    }
+                  
                     handlePopups();
                     mouse.delay(1000);
                     // clickBankDirectly();
@@ -2908,8 +2924,12 @@ public class MainFrame extends JFrame {
 
   private void handleAwards() {
     try {
-      mouse.delay(4000);
+      mouse.delay(3500);
       Pixel p = scanner.scanOneFast("ballReward.bmp", scanner._scanArea, false);
+      if (p == null) {
+        mouse.delay(1000);
+        p = scanner.scanOneFast("ballReward.bmp", scanner._scanArea, false);
+      }
       if (p != null) {
         mouse.click(p);
         mouse.delay(3500);
