@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v46a";
+  private static String APP_TITLE = "TM v47";
 
   private MouseRobot mouse;
 
@@ -625,6 +625,8 @@ public class MainFrame extends JFrame {
                   } else {
                     pv = scanner.scanOneFast("defeat.bmp", scanner._scanArea, false);
                     if (pv != null) {
+                      pv.x += 115;
+                      pv.y -= 201;
                       stats.register("Matches");
                       stats.register("Lost");
                       success = true;
@@ -657,6 +659,8 @@ public class MainFrame extends JFrame {
                       }
                       if (solution == 0)
                         mouse.delay(333);
+                      
+                      turns++;
                     } while (turns < 3 && solution == 0);
                     
                     if (solution == 2) {
@@ -1001,10 +1005,10 @@ public class MainFrame extends JFrame {
               p = null;
               if (settings.getBoolean("tasks.club.premium", false)) {
                 Rectangle area = new Rectangle(scanner._fullArea);
-                area.y = scanner._br.y - 187;
-                area.height = 187;
-                area.x += 350;
-                area.width -= (350 + 250);
+                area.y = scanner._br.y - 195;
+                area.height = 195;
+                area.x += 300;
+                area.width -= (300 + 150);
                 p = scanner.scanOneFast("clubClaim.bmp", area, false);
                 if (p != null) {
                   mouse.click(p.x + 20, p.y + 12);
