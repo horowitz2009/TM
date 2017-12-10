@@ -191,7 +191,7 @@ public class MainFrame extends JFrame {
         taskManager.addTask(bankTask);
         taskManager.addTask(sponsorTask);
 
-        taskManager.addTask(sfTask);
+        //taskManager.addTask(sfTask);
         taskManager.addTask(premiumTask);
         taskManager.addTask(sponsorTask);
         taskManager.addTask(ballTask);
