@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v47";
+  private static String APP_TITLE = "TM v48";
 
   private MouseRobot mouse;
 
@@ -96,6 +96,7 @@ public class MainFrame extends JFrame {
   private JToggleButton _clubToggle;
   private JToggleButton _clubDuelsToggle;
   private JToggleButton _sfToggle;
+  private JToggleButton _prToggle;
 
   private Task practiceTask;
   private Task sponsorTask;
@@ -178,7 +179,7 @@ public class MainFrame extends JFrame {
       sponsorTask();
       clubTask();
       checkDuelsTask();
-      sfTask();
+      //sfTask();
       rankingsTask();
       taskManager = new TaskManager(mouse);
       if (!SIMPLE) {
@@ -1171,6 +1172,8 @@ public class MainFrame extends JFrame {
     mouse.dragFast(pp.x, pp.y, m.x + xx * x2, m.y + yy * y2, false, false);
     mouse.delay(200);
     mouse.mouseMove(scanner.getParkingPoint());
+    handlePopups();
+    mouse.delay(200);
 
   }
 
@@ -1195,7 +1198,8 @@ public class MainFrame extends JFrame {
               boolean move = settings.getBoolean("balls.move", true);
               Pixel p = null;
               handlePopups();
-              mouse.delay(100);
+              handlePopups();
+              mouse.delay(500);
               if (move) {
                 // move approach
                 clickBalls(scanner._fullArea);
@@ -2334,15 +2338,27 @@ public class MainFrame extends JFrame {
       }
     });
 
+//    // Summer Fiesta
+//    _sfToggle = new JToggleButton("SF");
+//    toolbar.add(_sfToggle);
+//    _sfToggle.addItemListener(new ItemListener() {
+//      @Override
+//      public void itemStateChanged(ItemEvent e) {
+//        boolean b = e.getStateChange() == ItemEvent.SELECTED;
+//        LOGGER.info("Summer Fiesta: " + (b ? "on" : "off"));
+//        settings.setProperty("tasks.sf", "" + b);
+//        settings.saveSettingsSorted();
+//      }
+//    });
     // Summer Fiesta
-    _sfToggle = new JToggleButton("SF");
-    toolbar.add(_sfToggle);
-    _sfToggle.addItemListener(new ItemListener() {
+    _prToggle = new JToggleButton("PR");
+    toolbar.add(_prToggle);
+    _prToggle.addItemListener(new ItemListener() {
       @Override
       public void itemStateChanged(ItemEvent e) {
         boolean b = e.getStateChange() == ItemEvent.SELECTED;
-        LOGGER.info("Summer Fiesta: " + (b ? "on" : "off"));
-        settings.setProperty("tasks.sf", "" + b);
+        LOGGER.info("Pairs repeat: " + (b ? "on" : "off"));
+        settings.setProperty("tasks.pairs.repeat", "" + b);
         settings.saveSettingsSorted();
       }
     });
@@ -2993,9 +3009,14 @@ public class MainFrame extends JFrame {
       _sponsorsToggle.setSelected(sponsors);
     }
 
-    boolean sf = "true".equalsIgnoreCase(settings.getProperty("tasks.sf"));
-    if (sf != _sfToggle.isSelected()) {
-      _sfToggle.setSelected(sf);
+//    boolean sf = "true".equalsIgnoreCase(settings.getProperty("tasks.sf"));
+//    if (sf != _sfToggle.isSelected()) {
+//      _sfToggle.setSelected(sf);
+//    }
+
+    boolean pr = "true".equalsIgnoreCase(settings.getProperty("tasks.pairs.repeat"));
+    if (pr != _prToggle.isSelected()) {
+      _prToggle.setSelected(pr);
     }
 
     boolean practice = "true".equalsIgnoreCase(settings.getProperty("tasks.practice"));
