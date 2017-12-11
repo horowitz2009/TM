@@ -88,6 +88,7 @@ public class ScreenScanner extends BaseScreenScanner {
     _fullArea = new Rectangle(_tl.x, _tl.y + 42, getGameWidth(), getGameHeight() - 42);
 
     getImageData("Continue.bmp", null, 19, 8);
+    getImageData("ball.bmp", null, 8, 10);
 
   }
 
