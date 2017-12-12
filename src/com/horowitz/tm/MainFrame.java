@@ -70,9 +70,9 @@ import com.horowitz.ocr.OCRe;
 public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
-  private final static boolean SIMPLE = false;
+  private final static boolean SIMPLE = true;
 
-  private static String APP_TITLE = "TM v48";
+  private static String APP_TITLE = "TM v49";
 
   private MouseRobot mouse;
 
@@ -1387,7 +1387,7 @@ public class MainFrame extends JFrame {
               if (pq != null) {
                 mouse.click(pq.x, pq.y + 226);
                 mouse.delay(4000);
-                if (!doPairs()) {
+                if (!doPairs(settings.getProperty("pairs.image", "lib/back2.bmp"))) {
                   LOGGER.info("no energy");
                   LOGGER.info("sleep 5min");
                   sleep(5 * 60000);
@@ -1484,7 +1484,7 @@ public class MainFrame extends JFrame {
       return null;
     }
 
-    public boolean doPairs() throws RobotInterruptedException, IOException, AWTException {
+    public boolean doPairs(String imageName) throws RobotInterruptedException, IOException, AWTException {
       boolean can = false;
       do {
         Pixel p = pairsStarted();
@@ -1505,7 +1505,7 @@ public class MainFrame extends JFrame {
           // do pairs
           int slotsNumber = 0;
           do {
-            slotsNumber = workPairs(pp, slotSize, gapx, gapy, gameArea);
+            slotsNumber = workPairs(pp, slotSize, gapx, gapy, gameArea, imageName);
           } while (slotsNumber > 0);
 
           // repeat?
@@ -1534,7 +1534,7 @@ public class MainFrame extends JFrame {
       return true;
     }
 
-    private int workPairs(final Pixel pp, int slotSize, int gapx, int gapy, Rectangle gameArea) {
+    private int workPairs(final Pixel pp, int slotSize, int gapx, int gapy, Rectangle gameArea, String imageName) {
       int slotsNumber = mrows * mcols;
       try {
         done = false;
@@ -1563,8 +1563,9 @@ public class MainFrame extends JFrame {
             Slot slot = matrix.get(new Coords(row, col));
 
             slot.image = scanSlot(slot.area);
-
-            if (!sameImage(scanner.getImageData("back2.bmp").getImage(), slot.image)) {
+            //settings.getProperty("pairs.image", "lib/back2.bmp");
+            
+            if (!sameImage(scanner.getImageData(imageName).getImage(), slot.image)) {
               // slot.image = null;
               slot.active = false;
               slotsNumber--;
@@ -2476,7 +2477,7 @@ public class MainFrame extends JFrame {
     }
     // RUN MAGIC
     if (!SIMPLE) {
-      AbstractAction action = new AbstractAction("Do magic") {
+      AbstractAction action = new AbstractAction("RUN") {
 
         public void actionPerformed(ActionEvent e) {
           runMagic();
@@ -2489,13 +2490,18 @@ public class MainFrame extends JFrame {
     // Pairs
     {
 
-      AbstractAction action = new AbstractAction("Do Pairs") {
+      AbstractAction action = new AbstractAction("Pairs") {
         public void actionPerformed(ActionEvent e) {
           Thread t = new Thread(new Runnable() {
             public void run() {
               try {
-                new PairsProtocol().doPairs();
-              } catch (RobotInterruptedException | IOException | AWTException e1) {
+                new PairsProtocol().doPairs(settings.getProperty("pairs.image", "lib/back2.bmp"));
+              } catch (RobotInterruptedException e) {
+                LOGGER.info("INTERRUPTED");
+              } catch (IOException e) {
+                e.printStackTrace();
+              } catch (AWTException e) {
+                e.printStackTrace();
               }
 
             }
@@ -2503,6 +2509,31 @@ public class MainFrame extends JFrame {
           t.start();
         }
 
+      };
+      mainToolbar1.add(action);
+    }
+    
+    {
+      
+      AbstractAction action = new AbstractAction("Pairs T") {
+        public void actionPerformed(ActionEvent e) {
+          Thread t = new Thread(new Runnable() {
+            public void run() {
+              try {
+                new PairsProtocol().doPairs(settings.getProperty("pairs.imageTournament", "lib/backTournament.bmp"));
+              } catch (RobotInterruptedException e) {
+                LOGGER.info("INTERRUPTED");
+              } catch (IOException e) {
+                e.printStackTrace();
+              } catch (AWTException e) {
+                e.printStackTrace();
+              }
+              
+            }
+          });
+          t.start();
+        }
+        
       };
       mainToolbar1.add(action);
     }
