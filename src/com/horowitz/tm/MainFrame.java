@@ -70,7 +70,7 @@ import com.horowitz.ocr.OCRe;
 public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
-  private final static boolean SIMPLE = true;
+  private final static boolean SIMPLE = false;
 
   private static String APP_TITLE = "TM v49";
 
