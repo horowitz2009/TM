@@ -1203,23 +1203,23 @@ public class MainFrame extends JFrame {
               if (move) {
                 // move approach
                 clickBalls(scanner._fullArea);
-
+                handlePopups();
                 drag(0, 1);
                 clickBalls(scanner._fullArea);
-
+                handlePopups();
                 dragE();
                 clickBalls(scanner._fullArea);
-
+                handlePopups();
                 dragW();
                 clickBalls(scanner._fullArea);
-
+                handlePopups();
                 dragN();
                 clickBalls(scanner._fullArea);
-
+                handlePopups();
                 dragE();
                 LOGGER.info("scan balls last one...");
                 clickBalls(scanner._fullArea);
-
+                handlePopups();
                 mouse.mouseMove(scanner.getParkingPoint());
               } else {
                 clickBalls(scanner._fullArea);
