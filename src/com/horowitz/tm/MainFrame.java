@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v49";
+  private static String APP_TITLE = "TM v50";
 
   private MouseRobot mouse;
 
@@ -2558,7 +2558,7 @@ public class MainFrame extends JFrame {
     }
     // Auto matches
     if (!SIMPLE) {
-      AbstractAction action = new AbstractAction("AutoM") {
+      AbstractAction action = new AbstractAction("AM1") {
         public void actionPerformed(ActionEvent e) {
           Thread t = new Thread(new Runnable() {
             public void run() {
@@ -2572,6 +2572,23 @@ public class MainFrame extends JFrame {
       };
       mainToolbar1.add(action);
 
+    }
+    // Auto matches
+    if (!SIMPLE) {
+      AbstractAction action = new AbstractAction("AM2") {
+        public void actionPerformed(ActionEvent e) {
+          Thread t = new Thread(new Runnable() {
+            public void run() {
+              setAutoMatches2();
+            }
+            
+          });
+          t.start();
+        }
+        
+      };
+      mainToolbar1.add(action);
+      
     }
     // // STOP MAGIC
     // {
@@ -3389,6 +3406,35 @@ public class MainFrame extends JFrame {
           // it's time
           LOGGER.info("Turning matches off...");
           _matchesToggle.setSelected(false);
+        }
+      }, "AUTOM");
+      timer.start();
+    }
+  }
+  private void setAutoMatches2() {
+    if (!isRunning("AUTOM2")) {
+      _matchesToggle.setSelected(false);
+      final Calendar when = Calendar.getInstance();
+      when.set(Calendar.HOUR_OF_DAY, 20);
+      when.set(Calendar.MINUTE, 11);
+      when.set(Calendar.SECOND, 0);
+      Thread timer = new Thread(new Runnable() {
+        public void run() {
+          // desired time: 6am
+          long remaining = 0l;
+          do {
+            long now = System.currentTimeMillis();
+            remaining = when.getTimeInMillis() - now;
+            _labels.get("autoM").setText(DateUtils.fancyTime2(remaining, false));
+            try {
+              Thread.sleep(5000);
+            } catch (InterruptedException e) {
+            }
+          } while (remaining > 0);
+
+          // it's time
+          LOGGER.info("Turning matches on...");
+          _matchesToggle.setSelected(true);
         }
       }, "AUTOM");
       timer.start();
