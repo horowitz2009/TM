@@ -5,6 +5,8 @@ public class Attributes {
   public int a1;
   public int a2;
   public int a3;
+  public int diff = 0;
+  public boolean good = false;
 
   public Attributes(int a1, int a2, int a3) {
     super();

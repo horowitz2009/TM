@@ -72,7 +72,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v50";
+  private static String APP_TITLE = "TM v51";
 
   private MouseRobot mouse;
 
@@ -179,7 +179,7 @@ public class MainFrame extends JFrame {
       sponsorTask();
       clubTask();
       checkDuelsTask();
-      //sfTask();
+      // sfTask();
       rankingsTask();
       taskManager = new TaskManager(mouse);
       if (!SIMPLE) {
@@ -191,7 +191,7 @@ public class MainFrame extends JFrame {
         taskManager.addTask(bankTask);
         taskManager.addTask(sponsorTask);
 
-        //taskManager.addTask(sfTask);
+        // taskManager.addTask(sfTask);
         taskManager.addTask(premiumTask);
         taskManager.addTask(sponsorTask);
         taskManager.addTask(ballTask);
@@ -643,7 +643,7 @@ public class MainFrame extends JFrame {
                     Rectangle area = scanner._scanArea;
                     if (pv != null)
                       area = new Rectangle(pv.x, pv.y + 380, 280, 45);
-                    
+
                     int turns = 0;
                     int solution = 0;
                     do {
@@ -660,24 +660,24 @@ public class MainFrame extends JFrame {
                       }
                       if (solution == 0)
                         mouse.delay(333);
-                      
+
                       turns++;
                     } while (turns < 3 && solution == 0);
-                    
+
                     if (solution == 2) {
-                      //awards
+                      // awards
                       handleAwards();
                       clickBankDirectly();
                     } else if (solution == 1) {
                       clickBankDirectly();
                     } else {
-                      //damn it! no button found 
+                      // damn it! no button found
                       mouse.click(pv.x + 129, pv.y + 410);
                       mouse.delay(300);
                       handleAwards();
                       clickBankDirectly();
                     }
-                  
+
                     handlePopups();
                     mouse.delay(1000);
                     // clickBankDirectly();
@@ -766,9 +766,6 @@ public class MainFrame extends JFrame {
         attrs.add(scanAttrs(slotArea[0]));
         attrs.add(scanAttrs(slotArea[1]));
         attrs.add(scanAttrs(slotArea[2]));
-        LOGGER.info("A1: " + attrs.get(0));
-        LOGGER.info("A2: " + attrs.get(1));
-        LOGGER.info("A3: " + attrs.get(2));
         Pixel pp = null;
         int slot = -1;
         if (duelsFull) {
@@ -784,40 +781,48 @@ public class MainFrame extends JFrame {
           myAttrs.a2 *= 1.04;
           myAttrs.a3 *= 1.04;
           LOGGER.info("M: " + myAttrs);
-          int i = 0;
-          for (Attributes a : attrs) {
-            if (a.deviation() > 25) {
-              LOGGER.info(a + " dev too big: " + a.deviation());
-              i++;
+
+          int mind = settings.getInt("tasks.matches.minDiff", 40);
+          int min0 = settings.getInt("tasks.matches.min0Diff", mind);
+          int min1 = settings.getInt("tasks.matches.min1Diff", min0);
+          int min2 = settings.getInt("tasks.matches.min2Diff", min1);
+
+          int maxd = settings.getInt("tasks.matches.maxDiff", 400);
+
+          if (attrs.get(0).deviation() <= 25) {
+            int diff = myAttrs.sum() - attrs.get(0).sum();
+            attrs.get(0).diff = diff;
+            if (diff > min0 && diff < maxd) {
+              attrs.get(0).good = true;
             }
           }
-          if (i == 0) {
-            int diff1 = myAttrs.sum() - attrs.get(0).sum();
-            int diff2 = myAttrs.sum() - attrs.get(1).sum();
-            int diff3 = myAttrs.sum() - attrs.get(2).sum();
-            int max = Integer.MIN_VALUE;
-            LOGGER.info("diffs: " + diff1 + "  " + diff2 + "  " + diff3);
-            // find the best - the bigger the gap, the better
-            if (diff1 > max) {
-              max = diff1;
-              slot = 0;
-            }
-            if (diff2 > max) {
-              max = diff2;
-              slot = 1;
-            }
-            if (diff3 > max) {
-              max = diff3;
-              slot = 2;
-            }
 
-            if (max > settings.getInt("tasks.matches.minDiff", 40)
-                && max < settings.getInt("tasks.matches.maxDiff", 400)) {
-              // good
-            } else {
-              slot = -1;
+          if (attrs.get(1).deviation() <= 25) {
+            int diff = myAttrs.sum() - attrs.get(1).sum();
+            attrs.get(1).diff = diff;
+            if (diff > min1 && diff < maxd) {
+              attrs.get(1).good = true;
             }
+          }
 
+          if (attrs.get(2).deviation() <= 25) {
+            int diff = myAttrs.sum() - attrs.get(2).sum();
+            attrs.get(2).diff = diff;
+            if (diff > min2 && diff < maxd) {
+              attrs.get(2).good = true;
+            }
+          }
+          LOGGER.info("A1: " + attrs.get(0) + "  " + attrs.get(0).diff + "  " + attrs.get(0).good);
+          LOGGER.info("A2: " + attrs.get(1) + "  " + attrs.get(1).diff + "  " + attrs.get(1).good);
+          LOGGER.info("A3: " + attrs.get(2) + "  " + attrs.get(2).diff + "  " + attrs.get(2).good);
+
+          String[] order = settings.getProperty("tasks.matches.order", "2,1,0").split(",");
+          for (int i = 0; i < order.length; i++) {
+            int sl = Integer.parseInt(order[i]);
+            if (attrs.get(sl).good) {
+              slot = sl;
+              break;
+            }
           }
         }
         LOGGER.info("SLOT: " + slot);
@@ -1387,7 +1392,7 @@ public class MainFrame extends JFrame {
               if (pq != null) {
                 mouse.click(pq.x, pq.y + 226);
                 mouse.delay(4000);
-                if (!doPairs(settings.getProperty("pairs.image", "lib/back2.bmp"))) {
+                if (!doPairs(settings.getProperty("pairs.image", "lib/back2.bmp"), false)) {
                   LOGGER.info("no energy");
                   LOGGER.info("sleep 5min");
                   sleep(5 * 60000);
@@ -1444,7 +1449,7 @@ public class MainFrame extends JFrame {
 
     private Rectangle clockArea;
 
-    private Pixel pairsStarted() throws AWTException, RobotInterruptedException, IOException {
+    private Pixel pairsStarted(boolean fast) throws AWTException, RobotInterruptedException, IOException {
       Pixel p = null;
       boolean started = false;
       int turn = 0;
@@ -1454,6 +1459,9 @@ public class MainFrame extends JFrame {
         LOGGER.info("check is started..." + p);
         if (p != null) {
           started = true;
+          if (fast)
+            return p;
+
           clockArea = new Rectangle(p.x + 897, p.y + 541, 18, 27);
           Pixel pp3 = scanner.scanOneFast("MultiplierZero2.bmp", clockArea, false);
           if (pp3 != null) {
@@ -1484,10 +1492,10 @@ public class MainFrame extends JFrame {
       return null;
     }
 
-    public boolean doPairs(String imageName) throws RobotInterruptedException, IOException, AWTException {
+    public boolean doPairs(String imageName, boolean fast) throws RobotInterruptedException, IOException, AWTException {
       boolean can = false;
       do {
-        Pixel p = pairsStarted();
+        Pixel p = pairsStarted(fast);
         if (p != null) {
 
           time = 0;
@@ -1505,19 +1513,26 @@ public class MainFrame extends JFrame {
           // do pairs
           int slotsNumber = 0;
           do {
-            slotsNumber = workPairs(pp, slotSize, gapx, gapy, gameArea, imageName);
+            slotsNumber = workPairs(pp, slotSize, gapx, gapy, gameArea, imageName, fast);
           } while (slotsNumber > 0);
 
           // repeat?
           can = false;
           if (settings.getBoolean("tasks.pairs.repeat", false)) {
-            mouse.delay(3000);
-            LOGGER.info("try to repeat...");
-            Pixel p2 = scanner.scanOneFast("replayButton.bmp", scanner._scanArea, false);
+            //mouse.delay(300);
+            int turn = 0;
+            Pixel p2 = null;
+            do {
+              LOGGER.info("try to repeat...");
+              p2 = scanner.scanOneFast("replayButton.bmp", scanner._scanArea, false);
+              if (p2 == null)
+                mouse.delay(300);
+            } while (p2 == null && turn++ < 10);
+            
             if (p2 != null) {
               mouse.click(p2.x, p2.y + 17);
-              LOGGER.info("PLAY AGAIN in 4s");
-              mouse.delay(4000);
+              LOGGER.info("PLAY AGAIN...");
+              mouse.delay(400);
               can = true;
             } else {
               LOGGER.info("done.");
@@ -1534,7 +1549,8 @@ public class MainFrame extends JFrame {
       return true;
     }
 
-    private int workPairs(final Pixel pp, int slotSize, int gapx, int gapy, Rectangle gameArea, String imageName) {
+    private int workPairs(final Pixel pp, int slotSize, int gapx, int gapy, Rectangle gameArea, String imageName,
+        boolean fast) {
       int slotsNumber = mrows * mcols;
       try {
         done = false;
@@ -1563,8 +1579,8 @@ public class MainFrame extends JFrame {
             Slot slot = matrix.get(new Coords(row, col));
 
             slot.image = scanSlot(slot.area);
-            //settings.getProperty("pairs.image", "lib/back2.bmp");
-            
+            // settings.getProperty("pairs.image", "lib/back2.bmp");
+
             if (!sameImage(scanner.getImageData(imageName).getImage(), slot.image)) {
               // slot.image = null;
               slot.active = false;
@@ -1614,11 +1630,13 @@ public class MainFrame extends JFrame {
         scanned = new ArrayList<Slot>(slotsNumber);
 
         // HIT IT!
-        int slow = settings.getInt("doPairs.slow", 60);
+        // int slow = settings.getInt("doPairs.slow", 60);
         LOGGER.info("Slots: " + slotsNumber);
 
         if (slotsNumber > 0) {
-          t.start();
+
+          if (!fast)
+            t.start();
           pairsScanned = 0;
           for (int row = 1; row <= mrows; row++) {
             for (int col = 1; col <= mcols; col++) {
@@ -1633,75 +1651,60 @@ public class MainFrame extends JFrame {
                   mouse.click(slot.area.x, slot.area.y);
                   if (first) {
                     prev = coords;
-                    mouse.delay(slow);
+                    // mouse.delay(slow);
                   } else {
                     final Slot prevSlot = matrix.get(prev);
                     mouse.delay(550);// was 600
                     slot.image = scanSlot(slot.area);
                     prevSlot.image = scanSlot(prevSlot.area);
-                    new Thread(new Runnable() {
-                      public void run() {
-                        try {
-                          Thread.sleep(250);
-                          if (PairsTools.areMatching(slot.area, prevSlot.area)) {
-                            prevSlot.active = false;
-                            slot.active = false;
-                            // scanned.remove(prevSlot);
-                            // scanned.remove(slot);
-                            time = System.currentTimeMillis() - 550 - 250;
-                            LOGGER.info("MATCH2!!!");
+                    if (!fast) {
+                      new Thread(new Runnable() {
+                        public void run() {
+                          try {
+                            Thread.sleep(250);
+                            if (PairsTools.areMatching(slot.area, prevSlot.area)) {
+                              prevSlot.active = false;
+                              slot.active = false;
+                              // scanned.remove(prevSlot);
+                              // scanned.remove(slot);
+                              time = System.currentTimeMillis() - 550 - 250;
+                              LOGGER.info("MATCH2!!!");
+                            }
+                          } catch (Exception e) {
+                            e.printStackTrace();
                           }
-                        } catch (Exception e) {
-                          e.printStackTrace();
+
                         }
+                      }).start();
+                      pairsScanned++;
+                      addToScanned(prevSlot, slot);
 
-                      }
-                    }).start();
-
-                    pairsScanned++;
-                    addToScanned(prevSlot, slot);
-
-                    // if (settings.getBoolean("debug", false) && once) {
-                    // // debug mf
-                    // once = false;
-                    // captureSlots(prevSlot, slot);
-                    // }
-                    // if (sameImage(prevSlot.image, slot.image)) {
-                    // // we have match, so remove both
-                    // prevSlot.image = null;
-                    // slot.image = null;
-                    // LOGGER.info("UH OH! Time is ticking now");
-                    // time = System.currentTimeMillis();
-                    // }
-
-                    if (time != 0) {
-                      if (System.currentTimeMillis() - time > 3000 && !matches.isEmpty()) {
-                        LOGGER.info("click something ... " + (System.currentTimeMillis() - time));
-                        // mouse.delay(400);
-                        Slot[] slots = matches.get(0);
-                        if (slots[0].coords.equals(prevSlot.coords) || slots[0].coords.equals(slot.coords)
-                            || slots[1].coords.equals(prevSlot.coords) || slots[1].coords.equals(slot.coords)) {
-                          LOGGER.info("hmm. wait a bit more...");
-                          mouse.delay(650);
+                      if (time != 0) {
+                        if (System.currentTimeMillis() - time > 3000 && !matches.isEmpty()) {
+                          LOGGER.info("click something ... " + (System.currentTimeMillis() - time));
+                          // mouse.delay(400);
+                          Slot[] slots = matches.get(0);
+                          if (slots[0].coords.equals(prevSlot.coords) || slots[0].coords.equals(slot.coords)
+                              || slots[1].coords.equals(prevSlot.coords) || slots[1].coords.equals(slot.coords)) {
+                            LOGGER.info("hmm. wait a bit more...");
+                            mouse.delay(650);
+                          }
+                          mouse.click(slots[0].area.x, slots[0].area.y);
+                          mouse.delay(140);
+                          mouse.click(slots[1].area.x, slots[1].area.y);
+                          mouse.delay(600);
+                          slots[0].active = false;
+                          slots[1].active = false;
+                          matches.remove(0);
+                          time = System.currentTimeMillis();
+                        } else {
+                          LOGGER.info("wait..." + (System.currentTimeMillis() - time));
+                          if (matches.isEmpty())
+                            LOGGER.info("no matches yet :(");
                         }
-                        mouse.click(slots[0].area.x, slots[0].area.y);
-                        mouse.delay(140);
-                        mouse.click(slots[1].area.x, slots[1].area.y);
-                        mouse.delay(600);
-                        slots[0].active = false;
-                        slots[1].active = false;
-                        matches.remove(0);
-                        time = System.currentTimeMillis();
-                      } else {
-                        LOGGER.info("wait..." + (System.currentTimeMillis() - time));
-                        if (matches.isEmpty())
-                          LOGGER.info("no matches yet :(");
                       }
-                    }
-
+                    }// end of if not fast
                   }
-                  // scanner.writeImage(slot.image, "slot_flipped" +
-                  // slot.coords.toString() + ".jpg");
 
                   first = !first;
                   // mouse.delay(150);
@@ -1713,10 +1716,11 @@ public class MainFrame extends JFrame {
           time = 0l;
 
           // now find matches
-          mouse.delay(700);
+
+          mouse.delay(300 + (!fast ? 400 : 0));
           clickMatches(mcols, mrows, matrix, -1);
 
-          mouse.delay(2000);
+          mouse.delay(1000);
         }
       } catch (RobotInterruptedException re) {
         slotsNumber = 0;
@@ -1826,6 +1830,8 @@ public class MainFrame extends JFrame {
       int clicks = 0;
       boolean done = false;
       int slow = settings.getInt("doPairs.slow", 60);
+      int d1 = slow;
+      int d2 = (int) (1.5 * slow);
       for (int row1 = 1; row1 <= mrows; row1++) {
         for (int col1 = 1; col1 <= mcols; col1++) {
 
@@ -1845,7 +1851,7 @@ public class MainFrame extends JFrame {
                   if (slot1.active && slot2.active && sameImage(slot1.image, slot2.image)) {
                     clicks++;
                     mouse.click(slot1.area.x, slot1.area.y);
-                    mouse.delay(140 + slow);
+                    mouse.delay(d1);
                     mouse.click(slot2.area.x, slot2.area.y);
 
                     if (settings.getBoolean("debug", false)) {
@@ -1855,7 +1861,7 @@ public class MainFrame extends JFrame {
                         done = true;
                       }
                     } else
-                      mouse.delay(200 + 5 * slow);
+                      mouse.delay(d2);
                     slot1.active = false;
                     slot2.active = false;
 
@@ -2339,18 +2345,18 @@ public class MainFrame extends JFrame {
       }
     });
 
-//    // Summer Fiesta
-//    _sfToggle = new JToggleButton("SF");
-//    toolbar.add(_sfToggle);
-//    _sfToggle.addItemListener(new ItemListener() {
-//      @Override
-//      public void itemStateChanged(ItemEvent e) {
-//        boolean b = e.getStateChange() == ItemEvent.SELECTED;
-//        LOGGER.info("Summer Fiesta: " + (b ? "on" : "off"));
-//        settings.setProperty("tasks.sf", "" + b);
-//        settings.saveSettingsSorted();
-//      }
-//    });
+    // // Summer Fiesta
+    // _sfToggle = new JToggleButton("SF");
+    // toolbar.add(_sfToggle);
+    // _sfToggle.addItemListener(new ItemListener() {
+    // @Override
+    // public void itemStateChanged(ItemEvent e) {
+    // boolean b = e.getStateChange() == ItemEvent.SELECTED;
+    // LOGGER.info("Summer Fiesta: " + (b ? "on" : "off"));
+    // settings.setProperty("tasks.sf", "" + b);
+    // settings.saveSettingsSorted();
+    // }
+    // });
     // Summer Fiesta
     _prToggle = new JToggleButton("PR");
     toolbar.add(_prToggle);
@@ -2495,7 +2501,7 @@ public class MainFrame extends JFrame {
           Thread t = new Thread(new Runnable() {
             public void run() {
               try {
-                new PairsProtocol().doPairs(settings.getProperty("pairs.image", "lib/back2.bmp"));
+                new PairsProtocol().doPairs(settings.getProperty("pairs.image", "lib/back2.bmp"), false);
               } catch (RobotInterruptedException e) {
                 LOGGER.info("INTERRUPTED");
               } catch (IOException e) {
@@ -2512,15 +2518,16 @@ public class MainFrame extends JFrame {
       };
       mainToolbar1.add(action);
     }
-    
+
     {
-      
+
       AbstractAction action = new AbstractAction("Pairs T") {
         public void actionPerformed(ActionEvent e) {
           Thread t = new Thread(new Runnable() {
             public void run() {
               try {
-                new PairsProtocol().doPairs(settings.getProperty("pairs.imageTournament", "lib/backTournament.bmp"));
+                new PairsProtocol().doPairs(settings.getProperty("pairs.imageTournament", "lib/backTournament.bmp"),
+                    false);
               } catch (RobotInterruptedException e) {
                 LOGGER.info("INTERRUPTED");
               } catch (IOException e) {
@@ -2528,12 +2535,38 @@ public class MainFrame extends JFrame {
               } catch (AWTException e) {
                 e.printStackTrace();
               }
-              
+
             }
           });
           t.start();
         }
-        
+
+      };
+      mainToolbar1.add(action);
+    }
+
+    {
+
+      AbstractAction action = new AbstractAction("PTF") {
+        public void actionPerformed(ActionEvent e) {
+          Thread t = new Thread(new Runnable() {
+            public void run() {
+              try {
+                new PairsProtocol().doPairs(settings.getProperty("pairs.imageTournament", "lib/backTournament.bmp"),
+                    true);
+              } catch (RobotInterruptedException e) {
+                LOGGER.info("INTERRUPTED");
+              } catch (IOException e) {
+                e.printStackTrace();
+              } catch (AWTException e) {
+                e.printStackTrace();
+              }
+
+            }
+          });
+          t.start();
+        }
+
       };
       mainToolbar1.add(action);
     }
@@ -2581,14 +2614,14 @@ public class MainFrame extends JFrame {
             public void run() {
               setAutoMatches2();
             }
-            
+
           });
           t.start();
         }
-        
+
       };
       mainToolbar1.add(action);
-      
+
     }
     // // STOP MAGIC
     // {
@@ -3057,10 +3090,10 @@ public class MainFrame extends JFrame {
       _sponsorsToggle.setSelected(sponsors);
     }
 
-//    boolean sf = "true".equalsIgnoreCase(settings.getProperty("tasks.sf"));
-//    if (sf != _sfToggle.isSelected()) {
-//      _sfToggle.setSelected(sf);
-//    }
+    // boolean sf = "true".equalsIgnoreCase(settings.getProperty("tasks.sf"));
+    // if (sf != _sfToggle.isSelected()) {
+    // _sfToggle.setSelected(sf);
+    // }
 
     boolean pr = "true".equalsIgnoreCase(settings.getProperty("tasks.pairs.repeat"));
     if (pr != _prToggle.isSelected()) {
@@ -3411,6 +3444,7 @@ public class MainFrame extends JFrame {
       timer.start();
     }
   }
+
   private void setAutoMatches2() {
     if (!isRunning("AUTOM2")) {
       _matchesToggle.setSelected(false);
