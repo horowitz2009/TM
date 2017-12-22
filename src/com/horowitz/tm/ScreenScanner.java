@@ -64,6 +64,8 @@ public class ScreenScanner extends BaseScreenScanner {
 
   private boolean _wide;
 
+  public Rectangle _scanArea4;
+
   public ScreenScanner(Settings settings) {
     super(settings);
   }
@@ -87,6 +89,9 @@ public class ScreenScanner extends BaseScreenScanner {
     _scanAreaC = new Rectangle(_tl.x + 120, _tl.y + 85, getGameWidth() - 120 - 120, getGameHeight() - 85 - 164);
     _fullArea = new Rectangle(_tl.x, _tl.y + 42, getGameWidth(), getGameHeight() - 42);
 
+    _scanArea4 = new Rectangle(_scanArea);
+    _scanArea4.width /= 2;
+    _scanArea4.height /= 2;
     getImageData("Continue.bmp", null, 19, 8);
     getImageData("ball.bmp", null, 8, 10);
 
