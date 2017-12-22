@@ -76,6 +76,7 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
+  private static final int MIN_SPEED = 0;
 
   private static String APP_TITLE = "TM v53";
 
@@ -1515,7 +1516,7 @@ public class MainFrame extends JFrame {
 
           // repeat?
           can = false;
-          if (settings.getBoolean("tasks.pairs.repeat", false)) {
+          if (!fast && settings.getBoolean("tasks.pairs.repeat", false)) {
             // mouse.delay(300);
             int turn = 0;
             Pixel p2 = null;
@@ -1523,8 +1524,8 @@ public class MainFrame extends JFrame {
               LOGGER.info("try to repeat...");
               p2 = scanner.scanOneFast("replayButton.bmp", scanner._scanArea, false);
               if (p2 == null)
-                mouse.delay(300);
-            } while (p2 == null && turn++ < 10);
+                mouse.delay(200);
+            } while (p2 == null && turn++ < 6);
 
             if (p2 != null) {
               mouse.click(p2.x, p2.y + 17);
@@ -1651,6 +1652,7 @@ public class MainFrame extends JFrame {
 
         // HIT IT!
         LOGGER.info("Slots: " + slotsNumber);
+        int ds = settings.getInt("doPairs.scanDelay", 540);
 
         if (slotsNumber > 0) {
 
@@ -1675,28 +1677,29 @@ public class MainFrame extends JFrame {
                     // mouse.delay(slow);
                   } else {
                     final Slot prevSlot = matrix.get(prev);
-                    mouse.delay(540);// was 550
+                    mouse.delay(ds);// was 550
                     slot.image = scanSlot(slot.area);
                     prevSlot.image = scanSlot(prevSlot.area);
-                    if (!fast) {
-                      new Thread(new Runnable() {
-                        public void run() {
-                          try {
-                            Thread.sleep(250);
-                            if (PairsTools.areMatching(slot.area, prevSlot.area)) {
-                              prevSlot.active = false;
-                              slot.active = false;
-                              // scanned.remove(prevSlot);
-                              // scanned.remove(slot);
-                              time = System.currentTimeMillis() - 550 - 250;
-                              LOGGER.info("MATCH2!!!");
-                            }
-                          } catch (Exception e) {
-                            e.printStackTrace();
+                    new Thread(new Runnable() {
+                      public void run() {
+                        try {
+                          Thread.sleep(250);
+                          if (PairsTools.areMatching(slot.area, prevSlot.area)) {
+                            prevSlot.active = false;
+                            slot.active = false;
+                            // scanned.remove(prevSlot);
+                            // scanned.remove(slot);
+                            time = System.currentTimeMillis() - 550 - 250;
+                            LOGGER.info("MATCH2!!!");
                           }
-
+                        } catch (Exception e) {
+                          e.printStackTrace();
                         }
-                      }).start();
+
+                      }
+                    }).start();
+                    
+                    if (!fast) {
                       pairsScanned++;
                       addToScanned(prevSlot, slot);
 
@@ -2454,7 +2457,7 @@ public class MainFrame extends JFrame {
       newValue = 130;
       _tfSpeed.setText("" + 130);
     }
-    if (newValue < 20 || newValue > 1000) {
+    if (newValue < MIN_SPEED || newValue > 1000) {
       LOGGER.info("Value must be in range 20-1000!");
       newValue = 130;
       _tfSpeed.setText("" + 130);
@@ -3186,7 +3189,7 @@ public class MainFrame extends JFrame {
     // }
     //
     int speed = settings.getInt("doPairs.slow", 130);
-    if (speed < 20 || speed > 1000) {
+    if (speed < MIN_SPEED || speed > 1000) {
       speed = 130;
       _tfSpeed.setText("" + speed);
       changeSpeed();
