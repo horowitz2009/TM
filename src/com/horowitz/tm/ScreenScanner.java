@@ -68,6 +68,12 @@ public class ScreenScanner extends BaseScreenScanner {
 
   public ScreenScanner(Settings settings) {
     super(settings);
+    try {
+      setKeyAreas();
+    } catch (IOException | AWTException | RobotInterruptedException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
   }
 
   public boolean isWide() {
@@ -89,12 +95,13 @@ public class ScreenScanner extends BaseScreenScanner {
     _scanAreaC = new Rectangle(_tl.x + 120, _tl.y + 85, getGameWidth() - 120 - 120, getGameHeight() - 85 - 164);
     _fullArea = new Rectangle(_tl.x, _tl.y + 42, getGameWidth(), getGameHeight() - 42);
 
-    _scanArea4 = new Rectangle(_scanArea);
+    _scanArea4 = new Rectangle(_fullArea);
+    _scanArea4.x = 0;
+    _scanArea4.y = 0;
     _scanArea4.width /= 2;
-    _scanArea4.height /= 2;
+    _scanArea4.height *= 0.67;
     getImageData("Continue.bmp", null, 19, 8);
     getImageData("ball.bmp", null, 8, 10);
-
   }
 
   public Pixel getParkingPoint() {

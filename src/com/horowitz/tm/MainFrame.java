@@ -76,9 +76,10 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
-  private static final int MIN_SPEED = 0;
+  
+  private static final int MIN_SPEED = SIMPLE ? 20 : 0;
 
-  private static String APP_TITLE = "TM v53";
+  private static String APP_TITLE = "TM v54";
 
   private MouseRobot mouse;
 
@@ -218,6 +219,8 @@ public class MainFrame extends JFrame {
 
     runSettingsListener();
 
+    LOGGER.info("scanArea: " + scanner._scanArea4.x + ", " + scanner._scanArea4.y + ", " + scanner._scanArea4.width
+        + ", " + scanner._scanArea4.height);
   }
 
   private void testImages() {
@@ -1631,8 +1634,7 @@ public class MainFrame extends JFrame {
           }
         } else {
           // PREDEFINED LAYOUT
-          // pairsLayout == PairsLayout.EASY_1
-          matrix = pairsLayout.matrix;
+          matrix = pairsLayout.buildMatrix();
           for (int row = 1; row <= mrows; row++) {
             for (int col = 1; col <= mcols; col++) {
               Slot slot = matrix.get(new Coords(row, col));
@@ -1644,7 +1646,6 @@ public class MainFrame extends JFrame {
             }
           }
           slotsNumber = matrix.size();
-
         }
 
         matches = new ArrayList<>(slotsNumber / 2);
@@ -1698,7 +1699,7 @@ public class MainFrame extends JFrame {
 
                       }
                     }).start();
-                    
+
                     if (!fast) {
                       pairsScanned++;
                       addToScanned(prevSlot, slot);
@@ -2411,24 +2412,6 @@ public class MainFrame extends JFrame {
     toolbar.add(_tfSpeed);
     _tfSpeed.setText("" + settings.getInt("doPairs.slow", 130));
 
-    _tfSpeed.addCaretListener(new CaretListener() {
-
-      private long last = 0l;
-
-      @Override
-      public void caretUpdate(CaretEvent e) {
-
-        long now = System.currentTimeMillis();
-        if (now - last > 750 || last == 0l) {
-          // TODO Auto-generated method stub
-          // System.err.println(e);
-          // doPairs.slow=95
-          // changeSpeed();
-        }
-        last = now;
-
-      }
-    });
     _tfSpeed.addFocusListener(new FocusListener() {
 
       @Override
@@ -2473,7 +2456,7 @@ public class MainFrame extends JFrame {
     JToolBar mainToolbar1 = new JToolBar();
     mainToolbar1.setFloatable(false);
     // SCAN
-    if (true) {
+    if (!SIMPLE) {
       AbstractAction action = new AbstractAction("Scan") {
         public void actionPerformed(ActionEvent e) {
           Thread myThread = new Thread(new Runnable() {
