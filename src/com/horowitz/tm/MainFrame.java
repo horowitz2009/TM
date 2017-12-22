@@ -17,6 +17,8 @@ import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
@@ -49,8 +51,11 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
+import javax.swing.event.CaretEvent;
+import javax.swing.event.CaretListener;
 
 import com.horowitz.commons.DateUtils;
 import com.horowitz.commons.GameErrorException;
@@ -72,7 +77,7 @@ public class MainFrame extends JFrame {
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
 
-  private static String APP_TITLE = "TM v51";
+  private static String APP_TITLE = "TM v52";
 
   private MouseRobot mouse;
 
@@ -1519,7 +1524,7 @@ public class MainFrame extends JFrame {
           // repeat?
           can = false;
           if (settings.getBoolean("tasks.pairs.repeat", false)) {
-            //mouse.delay(300);
+            // mouse.delay(300);
             int turn = 0;
             Pixel p2 = null;
             do {
@@ -1528,7 +1533,7 @@ public class MainFrame extends JFrame {
               if (p2 == null)
                 mouse.delay(300);
             } while (p2 == null && turn++ < 10);
-            
+
             if (p2 != null) {
               mouse.click(p2.x, p2.y + 17);
               LOGGER.info("PLAY AGAIN...");
@@ -2146,12 +2151,13 @@ public class MainFrame extends JFrame {
     // TOOLBARS
     JToolBar mainToolbar1 = createToolbar1();
     JToolBar mainToolbar2 = createToolbar2();
+    JToolBar mainToolbar3 = createToolbar3();
 
     JPanel toolbars = new JPanel(new GridLayout(0, 1));
     toolbars.add(mainToolbar1);
     if (!SIMPLE)
       toolbars.add(mainToolbar2);
-
+    toolbars.add(mainToolbar3);
     Box north = Box.createVerticalBox();
     north.add(toolbars);
     if (!SIMPLE)
@@ -2457,12 +2463,79 @@ public class MainFrame extends JFrame {
     return toolbar;
   }
 
+  private JToolBar createToolbar3() {
+    JToolBar toolbar = new JToolBar();
+    toolbar.setFloatable(false);
+
+    JLabel label1 = new JLabel("Speed (20-1000):");
+    _tfSpeed = new JTextField(5);
+    toolbar.add(label1);
+    toolbar.add(_tfSpeed);
+    _tfSpeed.setText("" + settings.getInt("doPairs.slow", 130));
+
+    _tfSpeed.addCaretListener(new CaretListener() {
+
+      private long last = 0l;
+
+      @Override
+      public void caretUpdate(CaretEvent e) {
+
+        long now = System.currentTimeMillis();
+        if (now - last > 750 || last == 0l) {
+          // TODO Auto-generated method stub
+          // System.err.println(e);
+          // doPairs.slow=95
+          // changeSpeed();
+        }
+        last = now;
+
+      }
+    });
+    _tfSpeed.addFocusListener(new FocusListener() {
+
+      @Override
+      public void focusLost(FocusEvent e) {
+        changeSpeed();
+        tfFocus = false;
+      }
+
+      @Override
+      public void focusGained(FocusEvent e) {
+        tfFocus = true;
+      }
+    });
+
+    return toolbar;
+  }
+
+  private boolean tfFocus = false;
+
+  private void changeSpeed() {
+    int newValue = 130;
+    try {
+      newValue = Integer.parseInt(_tfSpeed.getText().trim());
+    } catch (NumberFormatException e) {
+      LOGGER.info("Enter number!");
+      newValue = 130;
+      _tfSpeed.setText("" + 130);
+    }
+    if (newValue < 20 || newValue > 1000) {
+      LOGGER.info("Value must be in range 20-1000!");
+      newValue = 130;
+      _tfSpeed.setText("" + 130);
+
+    }
+    LOGGER.info("New speed: " + newValue);
+    settings.setProperty("doPairs.slow", "" + newValue);
+    settings.saveSettingsSorted();
+  }
+
   @SuppressWarnings("serial")
   private JToolBar createToolbar1() {
     JToolBar mainToolbar1 = new JToolBar();
     mainToolbar1.setFloatable(false);
     // SCAN
-    if (!SIMPLE) {
+    if (true) {
       AbstractAction action = new AbstractAction("Scan") {
         public void actionPerformed(ActionEvent e) {
           Thread myThread = new Thread(new Runnable() {
@@ -2519,35 +2592,36 @@ public class MainFrame extends JFrame {
       mainToolbar1.add(action);
     }
 
+    // {
+    //
+    // AbstractAction action = new AbstractAction("Pairs T") {
+    // public void actionPerformed(ActionEvent e) {
+    // Thread t = new Thread(new Runnable() {
+    // public void run() {
+    // try {
+    // new PairsProtocol().doPairs(settings.getProperty("pairs.imageTournament",
+    // "lib/backTournament.bmp"),
+    // false);
+    // } catch (RobotInterruptedException e) {
+    // LOGGER.info("INTERRUPTED");
+    // } catch (IOException e) {
+    // e.printStackTrace();
+    // } catch (AWTException e) {
+    // e.printStackTrace();
+    // }
+    //
+    // }
+    // });
+    // t.start();
+    // }
+    //
+    // };
+    // mainToolbar1.add(action);
+    // }
+
     {
 
       AbstractAction action = new AbstractAction("Pairs T") {
-        public void actionPerformed(ActionEvent e) {
-          Thread t = new Thread(new Runnable() {
-            public void run() {
-              try {
-                new PairsProtocol().doPairs(settings.getProperty("pairs.imageTournament", "lib/backTournament.bmp"),
-                    false);
-              } catch (RobotInterruptedException e) {
-                LOGGER.info("INTERRUPTED");
-              } catch (IOException e) {
-                e.printStackTrace();
-              } catch (AWTException e) {
-                e.printStackTrace();
-              }
-
-            }
-          });
-          t.start();
-        }
-
-      };
-      mainToolbar1.add(action);
-    }
-
-    {
-
-      AbstractAction action = new AbstractAction("PTF") {
         public void actionPerformed(ActionEvent e) {
           Thread t = new Thread(new Runnable() {
             public void run() {
@@ -2931,7 +3005,7 @@ public class MainFrame extends JFrame {
       // scanner.reset();
 
       boolean done = false;
-      for (int i = 0; i < 17 && !done; i++) {
+      for (int i = 0; i < 7 && !done; i++) {
         LOGGER.info("after refresh recovery try " + (i + 1));
 
         handlePopups();
@@ -2950,6 +3024,14 @@ public class MainFrame extends JFrame {
         // if (i > 8) {
         // captureScreen("refresh trouble ");
         // }
+      }
+      if (!done) {
+        LOGGER.info("SAFE MODE!!!");
+        final Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        scanner._br.x = screenSize.width - 298;
+        scanner._br.y = screenSize.height - 40;
+        scanner.setKeyAreas();
+        done = true;
       }
       // if (done) {
       // // runMagic();
@@ -2985,6 +3067,7 @@ public class MainFrame extends JFrame {
   private Long _speedTime = null;
 
   private long _fstart;
+  private JTextField _tfSpeed;
 
   private void handlePopups() throws RobotInterruptedException {
     boolean found = false;
@@ -3080,6 +3163,15 @@ public class MainFrame extends JFrame {
     // _ping2Toggle.setSelected(ping2);
     // }
     //
+    int speed = settings.getInt("doPairs.slow", 130);
+    if (speed < 20 || speed > 1000) {
+      speed = 130;
+      _tfSpeed.setText("" + speed);
+      changeSpeed(); 
+    }
+    if (!tfFocus && !_tfSpeed.getText().equals("" + speed)) {
+      _tfSpeed.setText("" + speed);
+    }
     boolean balls = "true".equalsIgnoreCase(settings.getProperty("tasks.balls"));
     if (balls != _ballsToggle.isSelected()) {
       _ballsToggle.setSelected(balls);
