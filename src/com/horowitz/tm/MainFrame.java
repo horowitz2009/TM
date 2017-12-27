@@ -76,10 +76,10 @@ public class MainFrame extends JFrame {
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
   private final static boolean SIMPLE = false;
-  
+
   private static final int MIN_SPEED = SIMPLE ? 20 : 0;
 
-  private static String APP_TITLE = "TM v54";
+  private static String APP_TITLE = "TM v56a";
 
   private MouseRobot mouse;
 
@@ -96,6 +96,7 @@ public class MainFrame extends JFrame {
 
   private JToggleButton _ballsToggle;
   private JToggleButton _sponsorsToggle;
+  private JToggleButton _tourToggle;
   private JToggleButton _practiceToggle;
   private JToggleButton _pairsToggle;
   private JToggleButton _matchesToggle;
@@ -107,6 +108,7 @@ public class MainFrame extends JFrame {
 
   private Task practiceTask;
   private Task sponsorTask;
+  private Task tourTask;
   private Task matchTask;
   private Task checkDuelsTask;
   private Task premiumTask;
@@ -184,6 +186,7 @@ public class MainFrame extends JFrame {
       bankTask();
       premiumTask();
       sponsorTask();
+      tourTask();
       clubTask();
       checkDuelsTask();
       // sfTask();
@@ -197,6 +200,7 @@ public class MainFrame extends JFrame {
         taskManager.addTask(matchTask);
         taskManager.addTask(bankTask);
         taskManager.addTask(sponsorTask);
+        taskManager.addTask(tourTask);
 
         // taskManager.addTask(sfTask);
         taskManager.addTask(premiumTask);
@@ -979,6 +983,45 @@ public class MainFrame extends JFrame {
     });
   }
 
+  private void tourTask() {
+    tourTask = new Task("Tournament", 1);
+    tourTask.setProtocol(new AbstractGameProtocol() {
+
+      @Override
+      public void execute() throws RobotInterruptedException, GameErrorException {
+        if (_tourToggle.isSelected())
+          try {
+            LOGGER.info("Tournaments...");
+            handlePopups();
+            mouse.mouseMove(scanner._parkingPoint);
+            mouse.delay(400);
+            Pixel p = scanner.scanOne("tourBuilding.bmp", scanner._fullArea, false);
+            if (p == null) {
+              LOGGER.info("Can't find tournament building...");
+              drag(-1, -1);
+              mouse.mouseMove(scanner._parkingPoint);
+              mouse.delay(400);
+              p = scanner.scanOne("tourBuilding.bmp", scanner._fullArea, false);
+            }
+
+            if (p != null) {
+              mouse.click(p.x + 6, p.y + 6);
+              mouse.delay(3000);
+              captureScreen("ping/tour ");
+              deleteOlder("ping", "tour", -1, 24);
+              sleep(30 * 60000);// 30min
+            } else {
+              sleep(2000);
+              LOGGER.info("Can't find tournament building2...");
+            }
+          } catch (IOException | AWTException e) {
+            e.printStackTrace();
+          }
+
+      }
+    });
+  }
+
   private void clubTask() {
     clubTask = new Task("Club", 1);
     clubTask.setProtocol(new AbstractGameProtocol() {
@@ -987,7 +1030,7 @@ public class MainFrame extends JFrame {
       public void execute() throws RobotInterruptedException, GameErrorException {
 
         try {
-          if (_clubToggle.isSelected() || _clubDuelsToggle.isSelected()) {
+          if (_clubToggle.isSelected()) { // || _clubDuelsToggle.isSelected()
             handlePopups();
             Pixel p = scanner.scanOneFast("club.bmp", scanner._scanArea, false);
             if (p == null) {
@@ -2088,6 +2131,7 @@ public class MainFrame extends JFrame {
     // TOOLBARS
     JToolBar mainToolbar1 = createToolbar1();
     JToolBar mainToolbar1p = createToolbar1p();
+    JToolBar mainToolbarQuiz = createToolbarQuiz();
     JToolBar mainToolbar2 = createToolbar2();
     JToolBar mainToolbar3 = createToolbar3();
 
@@ -2097,6 +2141,7 @@ public class MainFrame extends JFrame {
     if (!SIMPLE)
       toolbars.add(mainToolbar2);
     toolbars.add(mainToolbar3);
+    toolbars.add(mainToolbarQuiz);
     Box north = Box.createVerticalBox();
     north.add(toolbars);
     if (!SIMPLE)
@@ -2276,7 +2321,7 @@ public class MainFrame extends JFrame {
       }
     });
 
-    // Balls
+    // Sponsors
     _sponsorsToggle = new JToggleButton("S");
     toolbar.add(_sponsorsToggle);
     _sponsorsToggle.addItemListener(new ItemListener() {
@@ -2286,7 +2331,19 @@ public class MainFrame extends JFrame {
         LOGGER.info("Sponsors: " + (b ? "on" : "off"));
         settings.setProperty("tasks.sponsors", "" + b);
         settings.saveSettingsSorted();
+      }
+    });
 
+    // tournament observer
+    _tourToggle = new JToggleButton("T");
+    toolbar.add(_tourToggle);
+    _tourToggle.addItemListener(new ItemListener() {
+      @Override
+      public void itemStateChanged(ItemEvent e) {
+        boolean b = e.getStateChange() == ItemEvent.SELECTED;
+        LOGGER.info("Tournament Observer: " + (b ? "on" : "off"));
+        settings.setProperty("tasks.tournament", "" + b);
+        settings.saveSettingsSorted();
       }
     });
 
@@ -2372,7 +2429,7 @@ public class MainFrame extends JFrame {
     });
 
     // Club
-    _clubToggle = new JToggleButton("Cl M");
+    _clubToggle = new JToggleButton("CL");
     toolbar.add(_clubToggle);
 
     _clubToggle.addItemListener(new ItemListener() {
@@ -2385,20 +2442,20 @@ public class MainFrame extends JFrame {
 
       }
     });
-    // Club
+    // // Club D
     _clubDuelsToggle = new JToggleButton("Cl D");
-    toolbar.add(_clubDuelsToggle);
-
-    _clubDuelsToggle.addItemListener(new ItemListener() {
-      @Override
-      public void itemStateChanged(ItemEvent e) {
-        boolean b = e.getStateChange() == ItemEvent.SELECTED;
-        LOGGER.info("Club Duels: " + (b ? "on" : "off"));
-        settings.setProperty("tasks.club.duels", "" + b);
-        settings.saveSettingsSorted();
-
-      }
-    });
+    // toolbar.add(_clubDuelsToggle);
+    //
+    // _clubDuelsToggle.addItemListener(new ItemListener() {
+    // @Override
+    // public void itemStateChanged(ItemEvent e) {
+    // boolean b = e.getStateChange() == ItemEvent.SELECTED;
+    // LOGGER.info("Club Duels: " + (b ? "on" : "off"));
+    // settings.setProperty("tasks.club.duels", "" + b);
+    // settings.saveSettingsSorted();
+    //
+    // }
+    // });
     return toolbar;
   }
 
@@ -2541,32 +2598,6 @@ public class MainFrame extends JFrame {
     // mainToolbar1.add(action);
     // }
 
-    {
-
-      AbstractAction action = new AbstractAction("Pairs T") {
-        public void actionPerformed(ActionEvent e) {
-          Thread t = new Thread(new Runnable() {
-            public void run() {
-              try {
-                new PairsProtocol().doPairs(settings.getProperty("pairs.imageTournament", "lib/backTournament.bmp"),
-                    true, PairsLayout.NONE);
-              } catch (RobotInterruptedException e) {
-                LOGGER.info("INTERRUPTED");
-              } catch (IOException e) {
-                e.printStackTrace();
-              } catch (AWTException e) {
-                e.printStackTrace();
-              }
-
-            }
-          });
-          t.start();
-        }
-
-      };
-      mainToolbar1.add(action);
-    }
-
     // Reset
     if (!SIMPLE) {
       AbstractAction action = new AbstractAction("Reset") {
@@ -2648,7 +2679,7 @@ public class MainFrame extends JFrame {
 
     {
 
-      AbstractAction action = new AbstractAction("Pairs E1") {
+      AbstractAction action = new AbstractAction("P1") {
         public void actionPerformed(ActionEvent e) {
           Thread t = new Thread(new Runnable() {
             public void run() {
@@ -2674,7 +2705,7 @@ public class MainFrame extends JFrame {
 
     {
 
-      AbstractAction action = new AbstractAction("Pairs E2") {
+      AbstractAction action = new AbstractAction("P2") {
         public void actionPerformed(ActionEvent e) {
           Thread t = new Thread(new Runnable() {
             public void run() {
@@ -2700,7 +2731,7 @@ public class MainFrame extends JFrame {
 
     {
 
-      AbstractAction action = new AbstractAction("Pairs E3") {
+      AbstractAction action = new AbstractAction("P3") {
         public void actionPerformed(ActionEvent e) {
           Thread t = new Thread(new Runnable() {
             public void run() {
@@ -2723,9 +2754,179 @@ public class MainFrame extends JFrame {
       };
       mainToolbar1.add(action);
     }
+    {
+
+      AbstractAction action = new AbstractAction("Pairs T") {
+        public void actionPerformed(ActionEvent e) {
+          Thread t = new Thread(new Runnable() {
+            public void run() {
+              try {
+                new PairsProtocol().doPairs(settings.getProperty("pairs.imageTournament", "lib/backTournament.bmp"),
+                    true, PairsLayout.NONE);
+              } catch (RobotInterruptedException e) {
+                LOGGER.info("INTERRUPTED");
+              } catch (IOException e) {
+                e.printStackTrace();
+              } catch (AWTException e) {
+                e.printStackTrace();
+              }
+
+            }
+          });
+          t.start();
+        }
+
+      };
+      mainToolbar1.add(action);
+    }
 
     return mainToolbar1;
   }
+
+  @SuppressWarnings("serial")
+  private JToolBar createToolbarQuiz() {
+    JToolBar mainToolbar1 = new JToolBar();
+    mainToolbar1.setFloatable(false);
+    // Balls
+    JToggleButton tourToggle = new JToggleButton(" Tour ");
+    mainToolbar1.add(tourToggle);
+    tourToggle.addItemListener(new ItemListener() {
+      @Override
+      public void itemStateChanged(ItemEvent e) {
+        try {
+          boolean b = e.getStateChange() == ItemEvent.SELECTED;
+          LOGGER.info("Tournament mode: " + (b ? "on" : "off"));
+          //settings.setProperty("tasks.balls", "" + b);
+          //settings.saveSettingsSorted();
+          if (quizMaster == null)
+            quizMaster = new QuizMaster(scanner, settings);
+          quizMaster.setTournamentMode(b);
+        } catch (IOException e1) {
+          e1.printStackTrace();
+        }
+      }
+    });
+    {
+
+      AbstractAction action = new AbstractAction("Load") {
+        public void actionPerformed(ActionEvent e) {
+          Thread t = new Thread(new Runnable() {
+            public void run() {
+              try {
+                if (quizMaster == null)
+                  quizMaster = new QuizMaster(scanner, settings);
+                quizMaster.loadQuestions();
+              } catch (IOException e) {
+                e.printStackTrace();
+                LOGGER.info(e.getMessage());
+              }
+
+            }
+          });
+          t.start();
+        }
+
+      };
+      mainToolbar1.add(action);
+    }
+    {
+
+      AbstractAction action = new AbstractAction("Play") {
+        public void actionPerformed(ActionEvent e) {
+          Thread t = new Thread(new Runnable() {
+            public void run() {
+              try {
+                if (quizMaster == null)
+                  quizMaster = new QuizMaster(scanner, settings);
+
+                quizMaster.stop();
+                mouse.delay(200);
+                quizMaster.play();
+              } catch (RobotInterruptedException e) {
+                LOGGER.info("INTERRUPTED");
+              } catch (IOException e) {
+                e.printStackTrace();
+              } catch (AWTException e) {
+                e.printStackTrace();
+              }
+
+            }
+          });
+          t.start();
+        }
+
+      };
+      mainToolbar1.add(action);
+    }
+
+    {
+
+      AbstractAction action = new AbstractAction("Cap") {
+        public void actionPerformed(ActionEvent e) {
+          Thread t = new Thread(new Runnable() {
+            public void run() {
+              try {
+                if (quizMaster == null)
+                  quizMaster = new QuizMaster(scanner, settings);
+                quizMaster.capture();
+              } catch (RobotInterruptedException e) {
+                LOGGER.info("INTERRUPTED");
+              } catch (IOException e) {
+                e.printStackTrace();
+              } catch (AWTException e) {
+                e.printStackTrace();
+              }
+
+            }
+          });
+          t.start();
+        }
+
+      };
+      mainToolbar1.add(action);
+    }
+    {
+
+      AbstractAction action = new AbstractAction("Stop") {
+        public void actionPerformed(ActionEvent e) {
+          Thread t = new Thread(new Runnable() {
+            public void run() {
+              quizMaster.stop();
+            }
+          });
+          t.start();
+        }
+
+      };
+      mainToolbar1.add(action);
+    }
+    {
+      AbstractAction action = new AbstractAction("Save") {
+        public void actionPerformed(ActionEvent e) {
+          Thread t = new Thread(new Runnable() {
+            public void run() {
+              try {
+                if (quizMaster == null)
+                  quizMaster = new QuizMaster(scanner, settings);
+                quizMaster.processNewQuestions();
+              } catch (IOException e) {
+                e.printStackTrace();
+                LOGGER.info(e.getMessage());
+              }
+
+            }
+          });
+          t.start();
+        }
+
+      };
+      mainToolbar1.add(action);
+    }
+
+    return mainToolbar1;
+  }
+
+  private QuizMaster quizMaster;
 
   private void setupLogger() {
     try {
@@ -3188,6 +3389,11 @@ public class MainFrame extends JFrame {
     boolean sponsors = "true".equalsIgnoreCase(settings.getProperty("tasks.sponsors"));
     if (sponsors != _sponsorsToggle.isSelected()) {
       _sponsorsToggle.setSelected(sponsors);
+    }
+
+    boolean tour = "true".equalsIgnoreCase(settings.getProperty("tasks.tournament", "false"));
+    if (tour != _tourToggle.isSelected()) {
+      _tourToggle.setSelected(tour);
     }
 
     // boolean sf = "true".equalsIgnoreCase(settings.getProperty("tasks.sf"));

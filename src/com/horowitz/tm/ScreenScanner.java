@@ -410,5 +410,12 @@ public class ScreenScanner extends BaseScreenScanner {
 
     return found;
   }
+  
+  public boolean sameImage(BufferedImage one, BufferedImage two) {
+    if (one == null || two == null)
+      return false;
+    Pixel pixel = _comparator.findImage(one, two);
+    return pixel != null;
+  }
 
 }
