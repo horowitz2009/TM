@@ -79,7 +79,7 @@ public class MainFrame extends JFrame {
 
   private static final int MIN_SPEED = SIMPLE ? 20 : 0;
 
-  private static String APP_TITLE = "TM v56a";
+  private static String APP_TITLE = "TM v57beta";
 
   private MouseRobot mouse;
 
@@ -176,6 +176,8 @@ public class MainFrame extends JFrame {
       mouse = scanner.getMouse();
       _pairsComparator = new SimilarityImageComparator(0.04, 3000);
       _pairsComparator.setErrors(8);
+
+      quizMaster = new QuizMaster(scanner, settings);
 
       // testImages();
 
@@ -1514,21 +1516,21 @@ public class MainFrame extends JFrame {
           if (fast)
             return p;
 
-          clockArea = new Rectangle(p.x + 897, p.y + 541, 18, 27);
+          clockArea = new Rectangle(p.x + 897 - 15, p.y + 541 - 15, 18 + 40, 27 + 25);
           Pixel pp3 = scanner.scanOneFast("MultiplierZero2.bmp", clockArea, false);
           if (pp3 != null) {
             LOGGER.info("clock found: " + pp3);
             clockArea = new Rectangle(pp3.x - 1, pp3.y - 1, 18, 27);
           } else {
-            Rectangle scanArea = scanner._scanArea;
+            Rectangle scanArea = scanner._fullArea;
             if (scanArea == null) {
               scanArea = new Rectangle(Toolkit.getDefaultToolkit().getScreenSize());
             }
             Rectangle area = new Rectangle(scanArea);
-            area.x += 700;
-            area.y += 500;
-            area.width -= 700;
-            area.height -= 500;
+            area.x += 300;
+            area.y += 300;
+            area.width -= 300;
+            area.height -= 300;
             pp3 = scanner.scanOneFast("MultiplierZero2.bmp", area, false);
             if (pp3 != null) {
               LOGGER.info("clock area: " + pp3);
@@ -1568,6 +1570,8 @@ public class MainFrame extends JFrame {
             Pixel p2 = null;
             do {
               LOGGER.info("try to repeat...");
+              Rectangle area = new Rectangle(scanner._scampArea);
+              area.height += 85;
               p2 = scanner.scanOneFast("replayButton.bmp", scanner._scanArea, false);
               if (p2 == null)
                 mouse.delay(200);
@@ -2796,12 +2800,10 @@ public class MainFrame extends JFrame {
         try {
           boolean b = e.getStateChange() == ItemEvent.SELECTED;
           LOGGER.info("Tournament mode: " + (b ? "on" : "off"));
-          //settings.setProperty("tasks.balls", "" + b);
-          //settings.saveSettingsSorted();
-          if (quizMaster == null)
-            quizMaster = new QuizMaster(scanner, settings);
+          // settings.setProperty("tasks.balls", "" + b);
+          // settings.saveSettingsSorted();
           quizMaster.setTournamentMode(b);
-        } catch (IOException e1) {
+        } catch (Exception e1) {
           e1.printStackTrace();
         }
       }
@@ -2813,8 +2815,6 @@ public class MainFrame extends JFrame {
           Thread t = new Thread(new Runnable() {
             public void run() {
               try {
-                if (quizMaster == null)
-                  quizMaster = new QuizMaster(scanner, settings);
                 quizMaster.loadQuestions();
               } catch (IOException e) {
                 e.printStackTrace();
@@ -2836,11 +2836,8 @@ public class MainFrame extends JFrame {
           Thread t = new Thread(new Runnable() {
             public void run() {
               try {
-                if (quizMaster == null)
-                  quizMaster = new QuizMaster(scanner, settings);
-
                 quizMaster.stop();
-                mouse.delay(200);
+                mouse.delay(200, false);
                 quizMaster.play();
               } catch (RobotInterruptedException e) {
                 LOGGER.info("INTERRUPTED");
@@ -2866,8 +2863,6 @@ public class MainFrame extends JFrame {
           Thread t = new Thread(new Runnable() {
             public void run() {
               try {
-                if (quizMaster == null)
-                  quizMaster = new QuizMaster(scanner, settings);
                 quizMaster.capture();
               } catch (RobotInterruptedException e) {
                 LOGGER.info("INTERRUPTED");
@@ -2906,10 +2901,8 @@ public class MainFrame extends JFrame {
           Thread t = new Thread(new Runnable() {
             public void run() {
               try {
-                if (quizMaster == null)
-                  quizMaster = new QuizMaster(scanner, settings);
-                quizMaster.processNewQuestions();
-              } catch (IOException e) {
+                saveQuestions();
+              } catch (Exception e) {
                 e.printStackTrace();
                 LOGGER.info(e.getMessage());
               }
@@ -3063,6 +3056,8 @@ public class MainFrame extends JFrame {
         // _buildingManager.update();
 
         LOGGER.info("Coordinates: " + scanner.getTopLeft() + " - " + scanner.getBottomRight());
+        LOGGER.info("scanArea: " + scanner._scanArea4.x + ", " + scanner._scanArea4.y + ", " + scanner._scanArea4.width
+            + ", " + scanner._scanArea4.height);
 
         LOGGER.info("GAME FOUND! TM READY!");
         setTitle(APP_TITLE + " READY");
@@ -3779,5 +3774,9 @@ public class MainFrame extends JFrame {
       }, "AUTOM");
       timer.start();
     }
+  }
+
+  private void saveQuestions() {
+    quizMaster.moveToRawDB();
   }
 }

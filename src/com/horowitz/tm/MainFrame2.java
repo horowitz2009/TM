@@ -890,7 +890,7 @@ public class MainFrame2 extends JFrame {
       Pixel p = null;
       do {
         turn++;
-        p = scanner.scanOneFast("clockAnchor.bmp", scanner._fullArea, false);
+        p = scanner.scanOneFast("clockAnchor.bmp", scanner._scanArea4, false);
         LOGGER.info("check is started..." + p);
         if (p != null) {
           started = true;

@@ -201,38 +201,7 @@ public class ScreenScanner extends BaseScreenScanner {
   public void captureGameArea(String filename) {
     writeArea(new Rectangle(new Point(_tl.x, _tl.y), new Dimension(getGameWidth(), getGameHeight())), filename);
   }
-
-  public Pixel locateImageCoords(String imageName, Rectangle[] area, int xOff, int yOff) throws AWTException,
-      IOException, RobotInterruptedException {
-
-    final Robot robot = new Robot();
-    final BufferedImage image = ImageIO.read(ImageManager.getImageURL(imageName));
-    Pixel[] mask = new ImageMask(imageName).getMask();
-    BufferedImage screen;
-    int turn = 0;
-    Pixel resultPixel = null;
-    // MouseRobot mouse = new MouseRobot();
-    // mouse.saveCurrentPosition();
-    while (turn < area.length) {
-
-      screen = robot.createScreenCapture(area[turn]);
-      List<Pixel> foundEdges = findEdge(image, screen, _comparator, null, mask);
-      if (foundEdges.size() >= 1) {
-        // found
-        // AppConsole.print("found it! ");
-        int y = area[turn].y;
-        int x = area[turn].x;
-        resultPixel = new Pixel(foundEdges.get(0).x + x + xOff, foundEdges.get(0).y + y + yOff);
-        // System.err.println("AREA: [" + turn + "] " + area[turn]);
-        break;
-      }
-      turn++;
-    }
-    // mouse.checkUserMovement();
-    // AppConsole.println();
-    return resultPixel;
-  }
-
+  
   public boolean isOptimized() {
     return _optimized && _br != null && _tl != null;
   }
@@ -279,37 +248,6 @@ public class ScreenScanner extends BaseScreenScanner {
       e.printStackTrace();
     }
 
-  }
-
-  public List<Pixel> compareImages(final BufferedImage image1, final BufferedImage image2, ImageComparator comparator,
-      Pixel[] indices) {
-    if (DEBUG)
-      try {
-        ImageIO.write(image2, "PNG", new File("area.png"));
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    List<Pixel> result = new ArrayList<Pixel>(8);
-    for (int i = 0; i <= (image2.getWidth() - image1.getWidth()); i++) {
-      for (int j = 0; j <= (image2.getHeight() - image1.getHeight()); j++) {
-        final BufferedImage subimage = image2.getSubimage(i, j, image1.getWidth(), image1.getHeight());
-        if (DEBUG)
-          try {
-            MyImageIO.write(subimage, "PNG", new File("subimage.png"));
-          } catch (IOException e) {
-            e.printStackTrace();
-          }
-
-        boolean b = comparator.compare(image1, image2, null, indices);
-        // System.err.println("equal: " + b);
-        indices = null;
-        b = comparator.compare(image1, image2, null, indices);
-        // System.err.println("equal2: " + b);
-        List<Pixel> list = comparator.findSimilarities(image1, subimage, indices);
-        // System.err.println("FOUND: " + list);
-      }
-    }
-    return result;
   }
 
   public Pixel getBottomRight() {
@@ -414,8 +352,7 @@ public class ScreenScanner extends BaseScreenScanner {
   public boolean sameImage(BufferedImage one, BufferedImage two) {
     if (one == null || two == null)
       return false;
-    Pixel pixel = _comparator.findImage(one, two);
-    return pixel != null;
+    return comparator.compare(one, two);
   }
 
 }
