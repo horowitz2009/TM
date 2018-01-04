@@ -5,6 +5,8 @@ import java.awt.Color;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.image.BufferedImage;
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
@@ -14,19 +16,23 @@ import java.util.logging.Logger;
 import org.apache.commons.io.FileUtils;
 
 import com.horowitz.commons.CrazyImageComparator;
+import com.horowitz.commons.ImageData;
 import com.horowitz.commons.MouseRobot;
 import com.horowitz.commons.MyImageIO;
 import com.horowitz.commons.Pixel;
 import com.horowitz.commons.RobotInterruptedException;
 import com.horowitz.commons.Settings;
+import com.sun.org.apache.bcel.internal.generic.LSTORE;
 
 public class QuizMaster {
+
+  private PropertyChangeSupport support = new PropertyChangeSupport(this);
 
   private final static Logger LOGGER = Logger.getLogger("MAIN");
 
   private boolean tournamentMode = false;
   private ScreenScanner scanner;
-  private CrazyImageComparator comparator;
+  private ScreenScanner scannerInt;
   private Settings settings;
   private MouseRobot mouse;
   private boolean questionDisplayed = false;
@@ -47,21 +53,27 @@ public class QuizMaster {
 
   private QuizProcessor processor;
 
-  public QuizMaster(ScreenScanner scanner, Settings settings) throws IOException {
+  public QuizMaster(ScreenScanner scannerP, Settings settings) throws IOException {
     super();
-    this.scanner = scanner;
     this.settings = settings;
-    comparator = new CrazyImageComparator();
-    this.scanner.comparator.setPrecision(QuizParams.COMPARATOR_PRECISION);
-    comparator.setPrecision(QuizParams.COMPARATOR_PRECISION);
+    
+    scanner = scannerP;
+    scanner.comparator.setPrecision(QuizParams.COMPARATOR_PRECISION);
+    
+    scannerInt = new ScreenScanner(settings);
+    scannerInt.comparator.setPrecision(QuizParams.COMPARATOR_PRECISION_INT);
+    
     this.mouse = scanner.getMouse();
     this.processor = new QuizProcessor(scanner, settings);
-    scanner.getImageData(QuizParams.TOP_LEFT_CORNER).setColorToBypass(Color.RED);
+    scanner.getImageData(QuizParams.TOP_LEFT_CORNER).setColorToBypass(Color.red);
     scanner.getImageData("topLeftCorner6.bmp").setColorToBypass(Color.red);
+    scannerInt.getImageData("topLeftCorner6.bmp").setColorToBypass(Color.red);
+    scannerInt.getImageData("clearAnswer1T.png").setColorToBypass(Color.red);
     scanner.getImageData("correctAnswerTopLeft.png").setColorToBypass(Color.red);
+    
     scanner.getImageData(QuizParams.TOP_LEFT_CORNER_TOUR).setColorToBypass(Color.red);
     scanner.getImageData(QuizParams.QUESTION_DISPLAYED).setColorToBypass(Color.green);
-    
+
   }
 
   public void stop() {
@@ -73,8 +85,8 @@ public class QuizMaster {
   }
 
   public void capture() throws AWTException, RobotInterruptedException, IOException {
-    //scanner.comparator.setPrecision(25);
-    //scanner.comparator.setThreshold(0.93);
+    // scanner.comparator.setPrecision(25);
+    // scanner.comparator.setThreshold(0.93);
     Pixel p = clockVisible();
     if (p != null) {
       LOGGER.info("GO");
@@ -86,7 +98,7 @@ public class QuizMaster {
 
       do {
         if (questionDisplayed) {
-          captureQuestion(qaArea);
+          // captureQuestion(qaArea);
           mouse.delay(100, false);
         } else
           mouse.delay(100, false);
@@ -96,6 +108,68 @@ public class QuizMaster {
   }
 
   Pixel lastP = null;
+
+  private long qDisplayedTime;
+
+  private void runQDisplayedThread(final boolean waitForAnswer) {
+    stopQuestionThread = false;
+    qDisplayedTime = 0;
+    Thread t = new Thread(new Runnable() {
+      public void run() {
+        try {
+          int t = 0;
+          do {
+            t++;
+            Thread.sleep(30);
+            ImageData qID = scanner.getImageData(tournamentMode ? QuizParams.QUESTION_DISPLAYED_TOUR
+                : QuizParams.QUESTION_DISPLAYED);
+
+            BufferedImage qaImage = new Robot().createScreenCapture(qaArea);
+            BufferedImage qaQOnly = qaImage.getSubimage(0, 0, qDisplayedArea.width, qDisplayedArea.height);
+
+            Pixel pp = scanner.comparator.findImage(qID.getImage(), qaQOnly, null);
+            if (pp != null) {
+              Thread.sleep(20);
+              pp = scanner.comparator.findImage(qID.getImage(), qaQOnly, null);
+            }
+
+            BufferedImage a1Only = qaImage.getSubimage(0, 140, 20, 20);
+
+            Pixel pp2 = null;
+            if (waitForAnswer && pp != null) {
+              ImageData aID = scannerInt.getImageData(tournamentMode ? "clearAnswer1T.png" : "clearAnswer1.png");
+
+              pp2 = scannerInt.comparator.findImage(aID.getImage(), a1Only, Color.red);
+              // pp2 = scannerInt.findImage("clearAnswer1.png", aDisplayedArea);
+              if (pp2 != null) {
+                captureQuestion(qaImage);
+                Thread.sleep(200);
+              } else {
+                // try answered
+                pp2 = scannerInt.findImage(tournamentMode ? "correctAnswer1T.png" : "correctAnswer1.png",
+                    aDisplayedArea);// ,
+                // BufferedImage im = new Robot().createScreenCapture(qaArea);
+                int a = processor.findGreenAnswer(qaImage);
+                if (a > 0) {
+                  captureQuestion(qaImage);
+                  Thread.sleep(200);
+                }
+              }
+              questionDisplayed = pp != null && pp2 != null;
+            }
+
+            if (t >= 10) {
+              LOGGER.info((pp != null ? "--q--" : "-----") + (pp2 != null ? "--a--" : "-----"));
+              t = 0;
+              // LOGGER.info("q: " + pp + "   a: " + pp2);
+            }
+          } while (!stopQuestionThread);
+        } catch (Exception e) {
+        }
+      }
+    });
+    t.start();
+  }
 
   public void play() throws AWTException, RobotInterruptedException, IOException {
     Pixel p = clockVisible();
@@ -108,36 +182,39 @@ public class QuizMaster {
       // scanner.captureArea(qDisplayedArea, "quiz/qdisparea.bmp", true);
       runQDisplayedThread(true);
       boolean moved = false;
+      long lastMoved = System.currentTimeMillis();
       do {
         // LOGGER.info("c");
         // scan if question is displayed
         if (questionDisplayed) {
           // LOGGER.info("QV...");
-          captureQuestion(qaArea);
-          mouse.delay(100, false);
+          // captureQuestion(qaArea);
+          // mouse.delay(100, false);
           List<Question> possibleQuestions = getPossibleQuestions(qaArea);
-          //LOGGER.info(possibleQuestions.size() + " possible questions");
+          // LOGGER.info(possibleQuestions.size() + " possible questions");
+          support.firePropertyChange("QUESTIONS_FOUND", null, possibleQuestions.size());
           if (!possibleQuestions.isEmpty()) {
-            Pixel pa = scanForAnswer(qaArea, possibleQuestions);
+            Pixel pa = scanForAnswer(possibleQuestions);
             if (pa != null) {
               if (!moved) {
                 mouse.mouseMove(pa);
+                lastMoved = System.currentTimeMillis();
                 moved = true;
                 mouse.click();
-                mouse.delay(1000, false);
+                mouse.delay(3100, false);
               }
               mouse.delay(100, false);
             }
           } else {
             if (firstTime) {
               LOGGER.info("UNKNOWN QUESTION!");
-              AudioTools.playWarning();
+              // AudioTools.playWarning();
               mouse.delay(100, false);
               firstTime = false;
             } else {
               mouse.delay(100, false);
             }
-            captureQuestion(qaArea);
+            // captureQuestion(qaArea);
             moved = false;
           }
 
@@ -146,6 +223,11 @@ public class QuizMaster {
           firstTime = true;
           lastP = null;
           mouse.delay(100, false);
+        }
+
+        // plan B
+        if (System.currentTimeMillis() - lastMoved > 5000) {
+          moved = false;
         }
       } while (!done);
 
@@ -159,13 +241,13 @@ public class QuizMaster {
     qaArea = new Rectangle(p.x + 194, p.y + 154, 527, 287);
 
     qDisplayedArea = new Rectangle(qArea);
-    qDisplayedArea.width = 61;
-    qDisplayedArea.height = 60;
+    qDisplayedArea.width = 38;
+    qDisplayedArea.height = 28;
 
     aDisplayedArea = new Rectangle(aArea);
     // aDisplayedArea.y += 80;
-   // aDisplayedArea.x -= 2;
-    //aDisplayedArea.y -= 2;
+    // aDisplayedArea.x -= 2;
+    // aDisplayedArea.y -= 2;
     aDisplayedArea.width = 20;
     aDisplayedArea.height = 20;
 
@@ -179,7 +261,7 @@ public class QuizMaster {
 
   public void processNewQuestions() throws IOException {
     LOGGER.info("Processing new questions...");
-    //processor.processSourceFolder();
+    // processor.processSourceFolder();
   }
 
   private List<Question> getPossibleQuestions(Rectangle qaArea) throws AWTException {
@@ -189,10 +271,11 @@ public class QuizMaster {
     return possibleQuestions;
   }
 
-  private Pixel scanForAnswer(Rectangle qaArea, List<Question> possibleQuestions) throws AWTException, IOException, RobotInterruptedException {
+  private Pixel scanForAnswer(List<Question> possibleQuestions) throws AWTException, IOException,
+      RobotInterruptedException {
     BufferedImage im = new Robot().createScreenCapture(qaArea);
-    //scanner.comparator.setThreshold(0.99);
-    //scanner.comparator.setPrecision(10);
+    // scanner.comparator.setThreshold(0.99);
+    // scanner.comparator.setPrecision(10);
     Pixel p = processor.findAnswer(im, possibleQuestions);
     if (p != null) {
       return new Pixel(p.x + qaArea.x, p.y + qaArea.y);
@@ -202,8 +285,13 @@ public class QuizMaster {
 
   private void captureQuestion(Rectangle qaArea) {
     try {
-      BufferedImage im = new Robot().createScreenCapture(qaArea);
+      captureQuestion(new Robot().createScreenCapture(qaArea));
+    } catch (AWTException e) {
+    }
+  }
 
+  private void captureQuestion(BufferedImage im) {
+    try {
       if (prev == null || !scanner.sameImage(prev, im)) {
         MyImageIO.writeImageTS(im, "quiz/q.png");
         LOGGER.info("captured");
@@ -211,62 +299,11 @@ public class QuizMaster {
         // LOGGER.info("skip");
       }
       prev = im;
-    } catch (AWTException e) {
+    } catch (Exception e) {
       LOGGER.warning("oops " + e.getMessage());
       e.printStackTrace();
     }
 
-  }
-
-  private void runQDisplayedThread(final boolean waitForAnswer) {
-    stopQuestionThread = false;
-    Thread t = new Thread(new Runnable() {
-      public void run() {
-        try {
-          int t = 0;
-          do {
-            t++;
-            try {
-              Thread.sleep(30);
-            } catch (InterruptedException e) {
-            }
-            // LOGGER.info("q?");
-
-            Pixel pp = scanner.findImage(tournamentMode ? QuizParams.QUESTION_DISPLAYED_TOUR
-                : QuizParams.QUESTION_DISPLAYED, qDisplayedArea);
-            // System.err.println(pp + " " + qDisplayedArea);
-            questionDisplayed = pp != null;
-            Pixel pp2 = null;
-            if (waitForAnswer && pp != null) {
-              pp2 = scanner.findImage("topLeftCorner6.bmp", aDisplayedArea);
-              // pp2 = scanner.scanOneFast(tournamentMode ?
-              // QuizParams.TOP_LEFT_CORNER_TOUR
-              // : QuizParams.TOP_LEFT_CORNER, qDisplayedArea);
-              if (pp2 == null) {
-                // try answered
-                pp2 = scanner.findImage("correctAnswerTopLeft.png", aDisplayedArea);// ,
-                                                                                     // Color.red
-                // pp2 = scanner.findImage(tournamentMode ?
-                // QuizParams.TOP_LEFT_CORNER_ANSWERED_TOUR
-                // : QuizParams.TOP_LEFT_CORNER_ANSWERED, qDisplayedArea,
-                // Color.black);
-              }
-              questionDisplayed = pp != null && pp2 != null;
-            }
-
-            if (t >= 10) {
-              LOGGER.info((pp != null ? "--q--" : "-----") + (pp2 != null ? "--a--" : "-----"));
-              t = 0;
-              // LOGGER.info("q: " + pp + "   a: " + pp2);
-            }
-          } while (!stopQuestionThread);
-        } catch (AWTException e) {
-        } catch (RobotInterruptedException e) {
-        } catch (IOException e) {
-        }
-      }
-    });
-    t.start();
   }
 
   private void stopQuestionDisplayed() {
@@ -301,7 +338,7 @@ public class QuizMaster {
     this.processor.setTournamentMode(tournamentMode);
   }
 
-  public void moveToRawDB() {
+  public void save() {
     try {
       File srcDir = new File(QuizParams.SOURCE_FOLDER);
       String timestamp = QuizParams.SIMPLE_DATE_FORMAT.format(new Date());
@@ -318,6 +355,22 @@ public class QuizMaster {
     } catch (RobotInterruptedException e) {
       e.printStackTrace();
     }
-    
+
+  }
+
+  public void addPropertyChangeListener(PropertyChangeListener listener) {
+    support.addPropertyChangeListener(listener);
+  }
+
+  public void removePropertyChangeListener(PropertyChangeListener listener) {
+    support.removePropertyChangeListener(listener);
+  }
+
+  public void addPropertyChangeListener(String propertyName, PropertyChangeListener listener) {
+    support.addPropertyChangeListener(propertyName, listener);
+  }
+
+  public void removePropertyChangeListener(String propertyName, PropertyChangeListener listener) {
+    support.removePropertyChangeListener(propertyName, listener);
   }
 }

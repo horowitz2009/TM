@@ -66,6 +66,8 @@ public class ScreenScanner extends BaseScreenScanner {
 
   public Rectangle _scanArea4;
 
+  public Rectangle _scanAreaBR;
+
   public ScreenScanner(Settings settings) {
     super(settings);
     try {
@@ -100,6 +102,13 @@ public class ScreenScanner extends BaseScreenScanner {
     _scanArea4.y = 0;
     _scanArea4.width /= 2;
     _scanArea4.height *= 0.67;
+    
+    _scanAreaBR = new Rectangle(_tl.x, _tl.y, getGameWidth(), getGameHeight());
+    _scanAreaBR.x += (_scanAreaBR.width / 2);
+    _scanAreaBR.y += (_scanAreaBR.height / 2);
+    _scanAreaBR.width -= (_scanAreaBR.width / 2);
+    _scanAreaBR.height -=(_scanAreaBR.height / 2);
+    
     getImageData("Continue.bmp", null, 19, 8);
     getImageData("ball.bmp", null, 8, 10);
   }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <project default="copy-jar" name="Create Runnable Jar for Project Daze">
 
-	<property name="versionNumber" value="57beta2" />
+	<property name="versionNumber" value="57beta4" />
 
 	<property name="jarname" value="TM${versionNumber}.jar" description="" />
 	<property name="dropboxjarname" value="DropboxRemote${versionNumber}.jar" description="" />

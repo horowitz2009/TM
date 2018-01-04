@@ -9,7 +9,7 @@ import Catalano.Imaging.Filters.Threshold;
 
 public class QuizParams {
   public static final String QUESTION_DISPLAYED = "questionDisplayed2.png";
-  public static final String QUESTION_DISPLAYED_TOUR = "questionDisplayedT.bmp";
+  public static final String QUESTION_DISPLAYED_TOUR = "questionDisplayedT.png";
   public static final String TOP_LEFT_CORNER_TOUR = "topLeftCornerT.png";
   public static final String TOP_LEFT_CORNER = "topLeftCorner6.bmp";
   public static final String DB_DESTINATION = "C:/BACKUP/DBQUIZ/DB";
@@ -22,6 +22,7 @@ public class QuizParams {
   public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat(FILE_DATE_FORMAT);
   public static final Threshold THRESHOLD = new Threshold(100);
   public static final int COMPARATOR_PRECISION = 45;
+  public static final int COMPARATOR_PRECISION_INT = 10;
 
   public static BufferedImage toBW(BufferedImage src) {
     FastBitmap fb = new FastBitmap(src);

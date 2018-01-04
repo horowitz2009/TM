@@ -79,7 +79,7 @@ public class MainFrame extends JFrame {
 
   private static final int MIN_SPEED = SIMPLE ? 20 : 0;
 
-  private static String APP_TITLE = "TM v57beta";
+  private static String APP_TITLE = "TM v57b4";
 
   private MouseRobot mouse;
 
@@ -1570,9 +1570,7 @@ public class MainFrame extends JFrame {
             Pixel p2 = null;
             do {
               LOGGER.info("try to repeat...");
-              Rectangle area = new Rectangle(scanner._scampArea);
-              area.height += 85;
-              p2 = scanner.scanOneFast("replayButton.bmp", scanner._scanArea, false);
+              p2 = scanner.scanOneFast("replayButton.bmp", scanner._scanAreaBR, false);
               if (p2 == null)
                 mouse.delay(200);
             } while (p2 == null && turn++ < 6);
@@ -2138,6 +2136,7 @@ public class MainFrame extends JFrame {
     JToolBar mainToolbarQuiz = createToolbarQuiz();
     JToolBar mainToolbar2 = createToolbar2();
     JToolBar mainToolbar3 = createToolbar3();
+    JToolBar mainToolbar4 = createQuizDashBoard();
 
     JPanel toolbars = new JPanel(new GridLayout(0, 1));
     toolbars.add(mainToolbar1);
@@ -2146,6 +2145,7 @@ public class MainFrame extends JFrame {
       toolbars.add(mainToolbar2);
     toolbars.add(mainToolbar3);
     toolbars.add(mainToolbarQuiz);
+    toolbars.add(mainToolbar4);
     Box north = Box.createVerticalBox();
     north.add(toolbars);
     if (!SIMPLE)
@@ -2783,6 +2783,31 @@ public class MainFrame extends JFrame {
       };
       mainToolbar1.add(action);
     }
+
+    return mainToolbar1;
+  }
+
+  @SuppressWarnings("serial")
+  private JToolBar createQuizDashBoard() {
+    final JToolBar mainToolbar1 = new JToolBar();
+    mainToolbar1.setFloatable(false);
+
+    final JLabel label = new JLabel("           ");
+    mainToolbar1.add(label);
+    // label.setBackground(Color.red);
+    quizMaster.addPropertyChangeListener(new PropertyChangeListener() {
+
+      @Override
+      public void propertyChange(PropertyChangeEvent evt) {
+        Integer q = (Integer) evt.getNewValue();
+        if (q == 0) {
+          mainToolbar1.setBackground(Color.red);
+        } else {
+          mainToolbar1.setBackground(Color.green);
+        }
+        label.setText("" + q);
+      }
+    });
 
     return mainToolbar1;
   }
@@ -3777,6 +3802,6 @@ public class MainFrame extends JFrame {
   }
 
   private void saveQuestions() {
-    quizMaster.moveToRawDB();
+    quizMaster.save();
   }
 }

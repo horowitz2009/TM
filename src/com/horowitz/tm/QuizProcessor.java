@@ -8,6 +8,8 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -35,7 +37,7 @@ public class QuizProcessor {
   private Rectangle aArea;
   private Rectangle aDisplayedArea;
 
-  private CrazyImageComparator comparator;
+  // private CrazyImageComparator comparator;
   private TemplateMatcher matcher;
 
   private boolean done;
@@ -50,21 +52,36 @@ public class QuizProcessor {
   private List<Question> questions;
 
   private ScreenScanner scanner;
+  private ScreenScanner scannerInt;
+  private ScreenScanner scannerA;
 
   private Settings settings;
   private ImageData topLeftCorner;
 
-  public QuizProcessor(ScreenScanner scanner, Settings settings) throws IOException {
+  public QuizProcessor(ScreenScanner scannerP, Settings settings) throws IOException {
     super();
-    this.scanner = scanner;
-    this.comparator = new CrazyImageComparator(0.985, QuizParams.COMPARATOR_PRECISION);
+    scanner = scannerP;
+    
+    scannerInt = new ScreenScanner(settings);
+    scannerInt.comparator.setPrecision(QuizParams.COMPARATOR_PRECISION_INT);
+    scannerInt.comparator.setMaxBWErrors(12);
+
+    scannerA = new ScreenScanner(settings);
+    scannerA.comparator.setPrecision(QuizParams.COMPARATOR_PRECISION_INT);
+    scannerA.comparator.setThreshold(0.85);
+    // this.scannerA.comparator.setBW(true);
+
     matcher = new TemplateMatcher();
 
     this.settings = settings;
     this.mouse = scanner.getMouse();
     questions = new ArrayList<>(0);
+    
     scanner.getImageData(QuizParams.TOP_LEFT_CORNER).setColorToBypass(Color.red);
     scanner.getImageData(QuizParams.TOP_LEFT_CORNER_TOUR).setColorToBypass(Color.red);
+    
+    scannerA.getImageData(QuizParams.TOP_LEFT_CORNER).setColorToBypass(Color.red);
+    scannerA.getImageData(QuizParams.TOP_LEFT_CORNER_TOUR).setColorToBypass(Color.red);
     resetAreas();
   }
 
@@ -95,24 +112,25 @@ public class QuizProcessor {
       System.out.println("matcher bw: " + p + "   " + (end - start));
 
       // 4
-      comparator.setPrecision(1);
+      scannerA.comparator.setPrecision(30);
       start = System.currentTimeMillis();
-      p = comparator.findImage(image1, image2);
+      p = scannerA.comparator.findImage(image1, image2);
       end = System.currentTimeMillis();
-      System.out.println("comp: " + p + "   " + (end - start));
+      System.out.println("4 comp: " + p + "   " + (end - start));
 
       // 5
       CrazyImageComparator crazy = new CrazyImageComparator();
-      crazy.setPrecision(10);
+      crazy.setPrecision(45);
+      crazy.setThreshold(0.9995);
       start = System.currentTimeMillis();
       p = crazy.findImage(image1, image2);
       end = System.currentTimeMillis();
-      System.out.println("comp: " + p + "   " + (end - start));
+      System.out.println("5 comp: " + p + "   " + (end - start));
       // 6
       start = System.currentTimeMillis();
       p = crazy.findImageQ(image1, image2);
       end = System.currentTimeMillis();
-      System.out.println("comp q: " + p + "   " + (end - start));
+      System.out.println("6 comp q: " + p + "   " + (end - start));
 
       // 7
       image1 = QuizParams.toBW(image1);
@@ -120,8 +138,16 @@ public class QuizProcessor {
       start = System.currentTimeMillis();
       p = crazy.findImage(image1, image2);
       end = System.currentTimeMillis();
-      System.out.println("comp bw: " + p + "   " + (end - start));
+      System.out.println("7 comp bw: " + p + "   " + (end - start));
 
+      // 8
+      crazy.setPrecision(45);
+      crazy.setThreshold(0.9995);
+      crazy.setBW(true);
+      start = System.currentTimeMillis();
+      p = crazy.findImage(image1, image2);
+      end = System.currentTimeMillis();
+      System.out.println("8 comp: " + p + "   " + (end - start));
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -136,7 +162,7 @@ public class QuizProcessor {
         loadQuestions();
       int k = 0;
       for (Question q : questions) {
-        Pixel pq = comparator.findImage(aa, q.qImage);
+        Pixel pq = scanner.comparator.findImage(aa, q.qImage);
         if (pq != null)
           System.err.println(q);
         // System.err.println("" + k++);
@@ -153,7 +179,7 @@ public class QuizProcessor {
     TemplateMatcher matcher = new TemplateMatcher();
     // comparator.setPrecision(500);
     try {
-      BufferedImage aa = scanner.getImageData(answerFilename).getImage();
+      BufferedImage aa = scannerA.getImageData(answerFilename).getImage();
       aa = QuizParams.toBW(aa);
       if (this.questions.isEmpty())
         loadQuestions();
@@ -166,7 +192,7 @@ public class QuizProcessor {
         Pixel[] ps = new Pixel[4];
         for (int j = 0; j < ps.length; j++) {
           // ps[j] = matcher.findMatchQBW(aa, q.aImages[j], null);
-          ps[j] = comparator.findImage(aa, q.aImages[j]);
+          ps[j] = scannerA.comparator.findImage(aa, q.aImages[j]);
           if (ps[j] != null) {
             System.err.println(q);
             System.err.println("A:" + (j + 1));
@@ -201,11 +227,16 @@ public class QuizProcessor {
       File outputDir = new File(QuizParams.DB_DESTINATION + "/output");
       List<Question> noDuplicates = eliminateDuplicates(questions);
 
+      Collections.sort(noDuplicates, new Comparator<Question>() {
+        @Override
+        public int compare(Question q1, Question q2) {
+          return (int) (q1.lastModified - q2.lastModified);
+        }
+      });
       for (Question q : noDuplicates) {
         q.writeImages2(outputDir);
       }
     } catch (IOException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
   }
@@ -232,6 +263,8 @@ public class QuizProcessor {
       // it works but necessary right now //String ss =
       // answers[i].getName().substring(id.length()+2, id.length() + 3);
     }
+
+    q.lastModified = file.lastModified();
     // System.err.println(q);
     return q;
   }
@@ -250,17 +283,23 @@ public class QuizProcessor {
     if (c1 != null) {
       aImage = QuizParams.toBW(aImage);
       // scanner.writeImageTS(aImage, "aimage now.png");
-      int xOff = 13;
-      int yOff = 10;
+      int xOff = 13 + 3;
+      int yOff = 10 + 3;
+      boolean debug = false;
       BufferedImage correctImage = q.getCorrectImage();
-      // scanner.writeImageTS(correctImage, "correct.png");
+      if (debug)
+        scanner.writeImageTS(correctImage, "correct.png");
       if (correctImage != null) {
         correctImage = QuizParams.toBW(correctImage);
+        if (debug)
+          scanner.writeImageTS(correctImage, "correctImage.png");
         BufferedImage[] aImages = new BufferedImage[4];
         {
           Rectangle area = new Rectangle(c1.x + xOff, c1.y + yOff, 257 - 2 * xOff, 67 - 2 * yOff);
           aImages[0] = getSubimage(aImage, area, false);
-          if (compare(QuizParams.toBW(aImages[0]), correctImage)) {
+          if (debug)
+            scanner.writeImageTS(aImages[0], "aimage 0.png");
+          if (scannerA.comparator.findImage(QuizParams.toBW(aImages[0]), correctImage) != null) {
             LOGGER.info("1");
             return new Pixel(c1.x + aArea.x + 208, c1.y + aArea.y + 39);
           }
@@ -268,7 +307,9 @@ public class QuizProcessor {
         {
           Rectangle area = new Rectangle(c1.x + 270 + xOff, c1.y + yOff, 257 - 2 * xOff, 67 - 2 * yOff);
           aImages[1] = getSubimage(aImage, area, false);
-          if (compare(QuizParams.toBW(aImages[1]), correctImage)) {
+          if (debug)
+            scanner.writeImageTS(aImages[1], "aimage 1.png");
+          if (scannerA.comparator.findImage(QuizParams.toBW(aImages[1]), correctImage) != null) {
             LOGGER.info("2");
             return new Pixel(c1.x + aArea.x + 39 + 270, c1.y + aArea.y + 39);
           }
@@ -276,7 +317,9 @@ public class QuizProcessor {
         {
           Rectangle area = new Rectangle(c1.x + xOff, c1.y + 80 + yOff, 257 - 2 * xOff, 67 - 2 * yOff);
           aImages[2] = getSubimage(aImage, area, false);
-          if (compare(QuizParams.toBW(aImages[2]), correctImage)) {
+          if (debug)
+            scanner.writeImageTS(aImages[2], "aimage 2.png");
+          if (scannerA.comparator.findImage(QuizParams.toBW(aImages[2]), correctImage) != null) {
             LOGGER.info("3");
             return new Pixel(c1.x + aArea.x + 208, c1.y + aArea.y + 39 + 80);
           }
@@ -284,7 +327,9 @@ public class QuizProcessor {
         {
           Rectangle area = new Rectangle(c1.x + 270 + xOff, c1.y + 80 + yOff, 257 - 2 * xOff, 67 - 2 * yOff);
           aImages[3] = getSubimage(aImage, area, false);
-          if (compare(QuizParams.toBW(aImages[3]), correctImage)) {
+          if (debug)
+            scanner.writeImageTS(aImages[3], "aimage 3.png");
+          if (scannerA.comparator.findImage(QuizParams.toBW(aImages[3]), correctImage) != null) {
             LOGGER.info("4");
             return new Pixel(c1.x + aArea.x + 39 + 270, c1.y + aArea.y + 39 + 80);
           }
@@ -301,47 +346,65 @@ public class QuizProcessor {
   private boolean compare(BufferedImage image1, BufferedImage image2) {
     // scanner.writeImageTS(image1, "image1.png");
     // scanner.writeImageTS(image2, "image2.png");
-    return comparator.compare(image1, image2);
+    return scannerA.comparator.compare(image1, image2);
     // return scanner.getMatcher().findMatchQ(image1, image2, null) != null;
   }
 
-  private boolean compare(Question q1, Question q2, boolean mergeCorrectAnswer, boolean atLeastTwo) {
-    boolean qsame = comparator.compare(q1.qImage, q2.qImage);
+  private boolean compareAndMerge(Question q1, Question q2, boolean mergeCorrectAnswer, boolean atLeastTwo) {
+    boolean qsame = scanner.comparator.compare(q1.qImage, q2.qImage);
     boolean asame = true;
     int sameAnswers = 0;
     if (qsame) {
       for (int i = 0; i < 4; i++) {
-        if (q2.aImages[i] != null && comparator.compare(QuizParams.toBW(q1.aImages[i]), QuizParams.toBW(q2.aImages[i])))
+        if (q2.aImages[i] != null
+            && scannerA.comparator.compare(QuizParams.toBW(q1.aImages[i]), QuizParams.toBW(q2.aImages[i])))
           sameAnswers++;
       }
     }
-    if (mergeCorrectAnswer && qsame && asame && q1.correctAnswer == 0) {
-      q1.correctAnswer = q2.correctAnswer;
+    if (mergeCorrectAnswer && qsame && asame) {
+      if (q1.correctAnswer == 0) {
+        q1.correctAnswer = q2.correctAnswer;
+      } else if (q2.correctAnswer == 0) {
+        q2.correctAnswer = q1.correctAnswer;
+      }
     }
     asame = sameAnswers == 4 || (atLeastTwo && sameAnswers > 1);
     return qsame && asame;
   }
 
   private List<Question> eliminateDuplicates(List<Question> questions) {
-    List<Question> clean = new ArrayList<>(300);
+    List<Question> clean = new ArrayList<>(550);
 
     for (int i = 0; i < questions.size(); i++) {
       Question q1 = questions.get(i);
-      for (int j = i + 1; j < questions.size(); j++) {
-        Question q2 = questions.get(j);
+      for (int j = 0; j < questions.size(); j++) {
+        if (i != j) {
+          Question q2 = questions.get(j);
 
-        if (q1.dup || q2.dup)
-          continue;
-        if (compare(q1, q2, true, false)) {
-          q2.dup = true;
+          if (q1.dup || q2.dup)
+            continue;
+          if (compareAndMerge(q1, q2, true, false)) {
+            // ok we have dups, but which one is better
+            if (q2.lastModified > q1.lastModified) {
+              // q2 is newer
+              q1.dup = true;
+              break;
+            } else {
+              q2.dup = true;
+            }
+          }
         }
+      }// for j
+       // if (!q1.dup)
+       // clean.add(q1);
 
-      }
-      if (!q1.dup)
-        clean.add(q1);
       System.err.print(".");
       if ((i + 1) % 100 == 0)
         System.err.println();
+    }// for i
+    for (Question q : questions) {
+      if (!q.dup)
+        clean.add(q);
     }
     return clean;
   }
@@ -355,7 +418,7 @@ public class QuizProcessor {
       for (int j = 0; j < questions.size(); j++) {
         Question q2 = questions.get(j);
 
-        if (compare(q2, qNew, false, false)) {
+        if (compareAndMerge(q2, qNew, true, false)) {
           foundInDB = true;
           // qNew.dup = true;
           break;
@@ -373,11 +436,47 @@ public class QuizProcessor {
 
   public Pixel findAnswer(BufferedImage qaImage, List<Question> possibleQuestions) throws IOException, AWTException,
       RobotInterruptedException {
+    int answer = -1;
+    boolean different = true;
     for (Question q : possibleQuestions) {
+      if (q.correctAnswer > 0) {
+        if (answer == -1) {
+          answer = q.correctAnswer;
+          different = false;
+        } else {
+          if (answer != q.correctAnswer)
+            different = true;
+        }
+      }
       Pixel p = checkQuestion(qaImage, q);
       if (p != null)
         return p;
     }
+
+    // I'm here because the scanning of answers didn't work
+    if (!different && answer > 0) {
+      System.err.println("PLAN B " + answer);
+      Pixel p = null;
+      switch (answer) {
+      case 1:
+        p = new Pixel(aArea.x + 208, aArea.y + 54);
+        break;
+      case 2:
+        p = new Pixel(aArea.x + 39 + 270, aArea.y + 54);
+        break;
+      case 3:
+        p = new Pixel(aArea.x + 208, aArea.y + 54 + 80);
+        break;
+      case 4:
+        p = new Pixel(aArea.x + 39 + 270, aArea.y + 54 + 80);
+        break;
+      }
+
+      return p;
+    } else {
+      System.out.println("DAMNnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn");
+    }
+
     return null;
   }
 
@@ -393,7 +492,7 @@ public class QuizProcessor {
         Question q2 = questions.get(j);
         if (i != j && !q2.dup) {
           ;
-          boolean qsame = comparator.compare(q1.qImage, q2.qImage);
+          boolean qsame = scanner.comparator.compare(q1.qImage, q2.qImage);
           if (qsame) {
             list.add(q2);
             q2.dup = true;
@@ -409,16 +508,15 @@ public class QuizProcessor {
   }
 
   public List<Question> getPossibleQuestions(BufferedImage qaImage) {
-
     long start = System.currentTimeMillis();
     BufferedImage qImage = qaImage.getSubimage(qArea.x, qArea.y, qArea.width, qArea.height);
-    // qImage = QuizParams.toBW(qImage);
+    qImage = QuizParams.toBW(qImage);
     List<Question> possibleQuestions = new ArrayList<>(5);
     // comparator.setPrecision(60);
     for (Question q : questions) {
-      // scanner.writeImageTS(q.qImage, "q1 .png");
+      // scanner.writeImageTS(QuizParams.toBW(q.qImage), "q1 .png");
       // scanner.writeImageTS(qImage, "q2 .png");
-      if (comparator.compare(q.qImage, qImage)) {
+      if (scanner.comparator.compare(QuizParams.toBW(q.qImage), qImage)) {
         System.err.println("FOUND: " + q);
         possibleQuestions.add(q);
       }
@@ -585,7 +683,7 @@ public class QuizProcessor {
     BufferedImage qImage = ImageIO.read(new File(question));
     qImage = QuizParams.toBW(qImage);
     for (Question q : questions) {
-      if (comparator.compare(q.qImage, qImage)) {
+      if (scanner.comparator.compare(q.qImage, qImage)) {
         System.err.println("FOUND: " + q);
       }
     }
@@ -626,13 +724,12 @@ public class QuizProcessor {
       System.out.println("processing " + path);
       File[] files = dir.listFiles();
       int cnt = 0;
-      int cntQ = 0;
       int cntQnoA = 0;
       List<Question> questions = new ArrayList<>();
       for (File f : files) {
         if (f.isFile() && (f.getName().endsWith(".bmp") || f.getName().endsWith(".png"))) {
           cnt++;
-          System.out.println(f);
+          // System.out.println(f);
           BufferedImage image = ImageIO.read(f);
           Question q = processFile1(image, true);
 
@@ -640,7 +737,7 @@ public class QuizProcessor {
             // good question
             boolean dup = false;
             for (Question question : questions) {
-              if (compare(question, q, false, false)) {
+              if (compareAndMerge(question, q, false, false)) {
                 dup = true;
                 break;
               }
@@ -650,7 +747,7 @@ public class QuizProcessor {
               questions.add(q);
             }
           } else {
-            boolean fail = processFile2(image, questions);
+            processFile2(image, questions);
           }
           // any not good files will be ignored
         }
@@ -682,7 +779,7 @@ public class QuizProcessor {
     ImageData id = scanner.getImageData(tournamentMode ? QuizParams.QUESTION_DISPLAYED_TOUR
         : QuizParams.QUESTION_DISPLAYED);
 
-    Pixel pq = comparator.findImage(id.getImage(), image.getSubimage(0, 0, 61, 60), id.getColorToBypass());
+    Pixel pq = scanner.comparator.findImage(id.getImage(), image.getSubimage(0, 0, 61, 60), id.getColorToBypass());
     if (pq != null) {
       // question visible
       q = new Question();
@@ -697,9 +794,9 @@ public class QuizProcessor {
       int xPad = 13;
       int yPad = 10;
       for (int i = 0; i < 4; i++) {
-        ImageData a = scanner.getImageData("clearAnswer" + (i + 1) + ".png");
+        ImageData a = scannerInt.getImageData("clearAnswer" + (i + 1) + ".png");
         BufferedImage aiImage = aImage.getSubimage(xoff[i], yoff[i], 20, 20);
-        Pixel c = comparator.findImage(a.getImage(), aiImage, Color.red);
+        Pixel c = scannerInt.comparator.findImage(a.getImage(), aiImage, Color.red);
         if (c != null) {
           Rectangle area = new Rectangle(xoff[i] + xPad, yoff[i] + yPad, 257 - 2 * xPad, 67 - 2 * yPad);
           q.aFilenames[i] = "Q-" + timestamp + "-A" + (i + 1);
@@ -724,7 +821,7 @@ public class QuizProcessor {
 
     ImageData id = scanner.getImageData(tournamentMode ? QuizParams.QUESTION_DISPLAYED_TOUR
         : QuizParams.QUESTION_DISPLAYED);
-    Pixel pq = comparator.findImage(id.getImage(), image.getSubimage(0, 0, 61, 60), id.getColorToBypass());
+    Pixel pq = scanner.comparator.findImage(id.getImage(), image.getSubimage(0, 0, 61, 60), id.getColorToBypass());
     if (pq != null) {
       // question visible
       // find it in list
@@ -741,42 +838,14 @@ public class QuizProcessor {
         // }
         // } else {
         // plan B
-        if (comparator.compare(q.qImage, qImage)) {
+        if (scanner.comparator.compare(q.qImage, qImage)) {
           theQuestion = q;
           break;
         }
         // }
       }
       if (theQuestion != null && theQuestion.correctAnswer == 0) {
-        int aa = 0;
-        BufferedImage aImage = getSubimage(image, aArea, true);
-        ImageData a1 = scanner.getImageData(tournamentMode ? "correctAnswer1.png" : "correctAnswer1.png");
-        BufferedImage a1Image = aImage.getSubimage(0, 0, 20, 20);
-        Pixel c1 = comparator.findImage(a1.getImage(), a1Image, Color.red);
-        if (c1 != null) {
-          aa = 1;
-        } else {
-          ImageData a2 = scanner.getImageData(tournamentMode ? "correctAnswer2.png" : "correctAnswer2.png");
-          BufferedImage a2Image = aImage.getSubimage(270, 0, 20, 20);
-          Pixel c2 = comparator.findImage(a2.getImage(), a2Image, Color.red);
-          if (c2 != null) {
-            aa = 2;
-          } else {
-            ImageData a3 = scanner.getImageData(tournamentMode ? "correctAnswer3.png" : "correctAnswer3.png");
-            BufferedImage a3Image = aImage.getSubimage(0, 80, 20, 20);
-            Pixel c3 = comparator.findImage(a3.getImage(), a3Image, Color.red);
-            if (c3 != null) {
-              aa = 3;
-            } else {
-              ImageData a4 = scanner.getImageData(tournamentMode ? "correctAnswer4.png" : "correctAnswer4.png");
-              BufferedImage a4Image = aImage.getSubimage(270, 80, 20, 20);
-              Pixel c4 = comparator.findImage(a4.getImage(), a4Image, Color.red);
-              if (c4 != null) {
-                aa = 4;
-              }
-            }
-          }
-        }
+        int aa = findGreenAnswer(image);
 
         if (aa > 0) {
           System.err.println("CORRECT ANSWER IS: " + aa);
@@ -790,6 +859,39 @@ public class QuizProcessor {
     return found;
   }
 
+  public int findGreenAnswer(BufferedImage image) throws IOException {
+    int aa = 0;
+    BufferedImage aImage = getSubimage(image, aArea, true);
+    ImageData a1 = scanner.getImageData(tournamentMode ? "correctAnswer1T.png" : "correctAnswer1.png");
+    BufferedImage a1Image = aImage.getSubimage(0, 0, 20, 20);
+    Pixel c1 = scannerA.comparator.findImage(a1.getImage(), a1Image, Color.red);
+    if (c1 != null) {
+      aa = 1;
+    } else {
+      ImageData a2 = scanner.getImageData(tournamentMode ? "correctAnswer2T.png" : "correctAnswer2.png");
+      BufferedImage a2Image = aImage.getSubimage(270, 0, 20, 20);
+      Pixel c2 = scannerA.comparator.findImage(a2.getImage(), a2Image, Color.red);
+      if (c2 != null) {
+        aa = 2;
+      } else {
+        ImageData a3 = scanner.getImageData(tournamentMode ? "correctAnswer3T.png" : "correctAnswer3.png");
+        BufferedImage a3Image = aImage.getSubimage(0, 80, 20, 20);
+        Pixel c3 = scannerA.comparator.findImage(a3.getImage(), a3Image, Color.red);
+        if (c3 != null) {
+          aa = 3;
+        } else {
+          ImageData a4 = scanner.getImageData(tournamentMode ? "correctAnswer4T.png" : "correctAnswer4.png");
+          BufferedImage a4Image = aImage.getSubimage(270, 80, 20, 20);
+          Pixel c4 = scannerA.comparator.findImage(a4.getImage(), a4Image, Color.red);
+          if (c4 != null) {
+            aa = 4;
+          }
+        }
+      }
+    }
+    return aa;
+  }
+
   public static void main(String[] args) {
     Settings settings = Settings.createSettings("tm.properties");
 
@@ -801,11 +903,16 @@ public class QuizProcessor {
 
       // C:\BACKUP\DBQUIZ\raw 20180101-101135-137\output
 
-      // quizProcessor.findQuestionByQuestion("C:/BACKUP/DBQUIZ/raw 20180101-101135-137/output/Q-20180101-101137-371.png");
-      // quizProcessor.testMatcher("cz.png", "Q-20171225-164428-808-A1.png");
-      quizProcessor.testMatcher(
-          "C:\\BACKUP\\DBQUIZ\\raw 20180101-101135-137\\output\\hmm\\Q-20171231-011633-718-A1-CORRECT.png",
-          "C:\\BACKUP\\DBQUIZ\\raw 20180101-101135-137\\output\\hmm\\Q-20180101-101137-371-A1-CORRECT.png");
+      // quizProcessor.findQuestionByQuestion("C:/BACKUP/DBQUIZ/raw 20180101-191104-564/output/Q-20180101-191106-653.png");
+      // quizProcessor.testMatcher("clearAnswer1.png", "topLeftCorner.png");
+       quizProcessor.testMatcher(
+       "C:\\BACKUP\\DBQUIZ\\raw 20180101-101135-137\\output\\hmm\\Q-20171231-011633-718-A1-CORRECT.png",
+       "C:\\BACKUP\\DBQUIZ\\raw 20180101-101135-137\\output\\hmm\\Q-20180101-101137-371-A2.png");
+       quizProcessor.testMatcher(
+           "C:\\BACKUP\\DBQUIZ\\raw 20180101-101135-137\\output\\hmm\\Q-20171231-011633-718-A1-CORRECT.png",
+           "C:\\BACKUP\\DBQUIZ\\raw 20180101-101135-137\\output\\hmm\\Q-20180101-101137-371-A1-CORRECT.png");
+      // quizProcessor.testMatcher("C:/BACKUP/DBQUIZ/DB/Q-20171230-183825-256.png",
+      // "C:/BACKUP/DBQUIZ/Q-20180101-191106-653.png");
       // quizProcessor.testMatcher("test3.png", "test3.bmp");
       // quizProcessor.testMatcher("Q-20171225-164428-808-A1.png",
       // "Q-20171225-164428-808-A1.png");
@@ -817,8 +924,8 @@ public class QuizProcessor {
       // quizProcessor.processOutputFolder("C:/BACKUP/DBQUIZ/READY",
       // "C:/BACKUP/DBQUIZ/READY/output", true);
 
-      quizProcessor.checkDBHealth();
-      quizProcessor.checkDBForDuplicates();
+      // quizProcessor.checkDBHealth();
+      //////////////////////////////////////////////quizProcessor.checkDBForDuplicates();
       // quizProcessor.processSourceFolder();
 
       // quizProcessor.processFolder("C:/backup/quizBIG1");
