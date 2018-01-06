@@ -8,12 +8,17 @@ import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
 
+import javax.imageio.ImageIO;
+
 import org.apache.commons.io.FileUtils;
+import org.hamcrest.core.IsAnything;
 
 import com.horowitz.commons.CrazyImageComparator;
 import com.horowitz.commons.ImageData;
@@ -53,16 +58,42 @@ public class QuizMaster {
 
   private QuizProcessor processor;
 
+  private CrazyImageComparator comparatorBW;
+
+  public static void main(String[] args) {
+    Settings settings = Settings.createSettings("tm.properties");
+    try {
+      QuizMaster quizMaster = new QuizMaster(new ScreenScanner(settings), settings);
+
+      quizMaster.loadQuestions();
+      BufferedImage image1 = ImageIO.read(new File("C:\\Users\\zhristov\\Dropbox\\TennisMania\\jimmya2.png"));
+      BufferedImage image2 = ImageIO.read(new File("C:\\Users\\zhristov\\Dropbox\\TennisMania\\jimmyq.png"));
+      Pixel p;
+      p = quizMaster.comparatorBW.findImage(image1, image2);
+      System.err.println("1: " + p);
+      quizMaster.comparatorBW.setThreshold(.9);
+      p = quizMaster.comparatorBW.findImage(image1, image2);
+      System.err.println("2: " + p);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+  }
+
   public QuizMaster(ScreenScanner scannerP, Settings settings) throws IOException {
     super();
     this.settings = settings;
-    
+
     scanner = scannerP;
     scanner.comparator.setPrecision(QuizParams.COMPARATOR_PRECISION);
-    
+
     scannerInt = new ScreenScanner(settings);
     scannerInt.comparator.setPrecision(QuizParams.COMPARATOR_PRECISION_INT);
-    
+
+    comparatorBW = new CrazyImageComparator();
+    comparatorBW.setBW(true);
+    comparatorBW.setThreshold(0.99);
+
     this.mouse = scanner.getMouse();
     this.processor = new QuizProcessor(scanner, settings);
     scanner.getImageData(QuizParams.TOP_LEFT_CORNER).setColorToBypass(Color.red);
@@ -70,7 +101,7 @@ public class QuizMaster {
     scannerInt.getImageData("topLeftCorner6.bmp").setColorToBypass(Color.red);
     scannerInt.getImageData("clearAnswer1T.png").setColorToBypass(Color.red);
     scanner.getImageData("correctAnswerTopLeft.png").setColorToBypass(Color.red);
-    
+
     scanner.getImageData(QuizParams.TOP_LEFT_CORNER_TOUR).setColorToBypass(Color.red);
     scanner.getImageData(QuizParams.QUESTION_DISPLAYED).setColorToBypass(Color.green);
 
@@ -110,6 +141,201 @@ public class QuizMaster {
   Pixel lastP = null;
 
   private long qDisplayedTime;
+  private BufferedImage qaImage;
+
+  private boolean questionVisible() throws IOException, AWTException {
+    ImageData qID = scanner.getImageData(tournamentMode ? QuizParams.QUESTION_DISPLAYED_TOUR
+        : QuizParams.QUESTION_DISPLAYED);
+    qaImage = new Robot().createScreenCapture(qaArea);
+    BufferedImage qaQOnly = qaImage.getSubimage(0, 0, qDisplayedArea.width, qDisplayedArea.height);
+
+    Pixel pp = scanner.comparator.findImage(qID.getImage(), qaQOnly, null);
+    return pp != null;
+  }
+
+  private boolean answersVisible(boolean scanIt) throws IOException, AWTException {
+    ImageData aID = scannerInt.getImageData(tournamentMode ? "clearAnswer1T.png" : "clearAnswer1.png");
+    BufferedImage a1Only;
+    if (scanIt) {
+      a1Only = new Robot().createScreenCapture(aDisplayedArea);
+    } else {
+      if (qaImage != null) {
+        a1Only = qaImage.getSubimage(0, 140, 20, 20);
+      } else
+        a1Only = new Robot().createScreenCapture(aDisplayedArea);
+    }
+    Pixel pp2 = scannerInt.comparator.findImage(aID.getImage(), a1Only, Color.red);
+    return pp2 != null;
+  }
+
+  private List<Question> possibleQuestions;
+
+  public void play2() throws AWTException, RobotInterruptedException, IOException {
+    possibleQuestions = null;
+    done = false;
+    Pixel p = clockVisible();
+    if (p != null) {
+      LOGGER.info("GO GO GO");
+      resetAreas(p);
+
+      // TODO boolean questionAnswered = false;
+      do {
+        if (questionVisible()) {
+          assert qaImage != null;
+          List<Question> newPossibleQuestions = processor.getPossibleQuestions(qaImage);
+          if (newPossibleQuestions.isEmpty()) {
+            waitForAnswers();
+            captureQuestion(qaImage);
+          } else {
+            // waiting for the answer
+            possibleQuestions = newPossibleQuestions;
+            int answer = sameAnswer(possibleQuestions);
+            waitForAnswers();
+            if (answer < 0) {
+              LOGGER.info("scan answers...");
+              long start = System.currentTimeMillis();
+              answer = scanAnswers(qaImage);
+              LOGGER.info("scan result: " + (System.currentTimeMillis() - start));
+            }
+            if (answer > 0) {
+              clickTheAnswer(answer);
+              LOGGER.info("waiting 3s ...");
+              mouse.delay(3200, false);
+            }
+
+          }// possible questions
+
+        }// q visible
+        mouse.delay(50, false);
+      } while (!done);
+
+    }
+  }
+
+  private int scanAnswers(BufferedImage qaImage2) {
+    for (Question q : possibleQuestions) {
+      //LOGGER.info("Checking answer " + q);
+      int answer = checkQuestion(qaImage, q);
+      if (answer > 0)
+        return answer;
+    }
+    return -1;
+  }
+
+  private BufferedImage getSubimage(BufferedImage image, Rectangle area, boolean remaining) {
+    int w = remaining ? image.getWidth() - area.x : area.width;
+    int h = remaining ? image.getHeight() - area.y : area.height;
+    BufferedImage res;
+    try {
+      res = image.getSubimage(area.x, area.y, w, h);
+      return res;
+    } catch (Exception e) {
+      if (!remaining)
+        return getSubimage(image, area, true);
+    }
+    return image;
+  }
+
+  private int checkQuestion(BufferedImage qaImage2, Question q) {
+
+    // aArea = new Rectangle(p.x + 194, p.y + 294, 527, 147);
+    // qaArea = new Rectangle(p.x + 194, p.y + 154, 527, 287);
+
+    BufferedImage aImage = getSubimage(qaImage2, new Rectangle(0, 140, 527, 147), true);
+    aImage = QuizParams.toBW(aImage);
+
+    boolean debug = false;
+
+    BufferedImage correctImage = q.getCorrectImage();
+    if (debug)
+      scanner.writeImageTS(aImage, "aimage now.png");
+    if (correctImage != null) {
+      correctImage = QuizParams.toBW(correctImage);
+      if (debug)
+        scanner.writeImageTS(correctImage, "correctImage.png");
+
+      int[] xoff = new int[] { 0, 270, 0, 270 };
+      int[] yoff = new int[] { 0, 0, 80, 80 };
+      int xPad = 13 + 2;
+      int yPad = 10 + 2;
+      for (int i = 0; i < 4; i++) {
+        Rectangle area = new Rectangle(xoff[i] + xPad, yoff[i] + yPad, 257 - 2 * xPad, 67 - 2 * yPad);
+        BufferedImage aiImage = getSubimage(aImage, area, false);
+        if (debug)
+          scanner.writeImageTS(aiImage, "aImage" + (i + 1) + ".png");
+
+        Pixel c = comparatorBW.findImage(aiImage, correctImage);
+        //System.err.println(""+(i+1)+": " + c);
+        if (c != null) {
+          // found it
+          return (i + 1);
+        }
+      }
+      return 0;
+    }
+
+    return -1;
+  }
+
+  private void waitForAnswers() throws IOException, AWTException, RobotInterruptedException {
+    int tries = 0;
+    boolean ok = false;
+    do {
+      mouse.delay(50, false);
+      ok = answersVisible(true);
+    } while (!ok && tries++ < 22);
+    if (ok) {
+      qaImage = new Robot().createScreenCapture(qaArea);
+      LOGGER.info("--q----a--");
+    }
+  }
+
+  private void clickTheAnswer(int answer) {
+    Pixel p = null;
+
+    switch (answer) {
+    case 1:
+      p = new Pixel(208, 54);
+      break;
+    case 2:
+      p = new Pixel(270 + 39, 54);
+      break;
+    case 3:
+      p = new Pixel(208, 80 + 54);
+      break;
+    case 4:
+      p = new Pixel(270 + 39, 80 + 54);
+      break;
+    }
+    if (p != null) {
+      LOGGER.info("A" + answer);
+      p.x += qaArea.x;
+      p.y += qaArea.y + 140;
+      mouse.click(p);
+    }
+  }
+
+  private int sameAnswer(List<Question> possibleQuestions) {
+    int answer = -1;
+    boolean different = true;
+    for (Question q : possibleQuestions) {
+      if (q.correctAnswer > 0) {
+        if (answer == -1) {
+          answer = q.correctAnswer;
+          different = false;
+        } else {
+          if (answer != q.correctAnswer)
+            different = true;
+        }
+      }
+    }
+
+    if (!different)
+      return answer;
+    else
+      return -1;
+
+  }
 
   private void runQDisplayedThread(final boolean waitForAnswer) {
     stopQuestionThread = false;
@@ -128,10 +354,10 @@ public class QuizMaster {
             BufferedImage qaQOnly = qaImage.getSubimage(0, 0, qDisplayedArea.width, qDisplayedArea.height);
 
             Pixel pp = scanner.comparator.findImage(qID.getImage(), qaQOnly, null);
-            if (pp != null) {
-              Thread.sleep(20);
-              pp = scanner.comparator.findImage(qID.getImage(), qaQOnly, null);
-            }
+            // if (pp != null) {
+            // Thread.sleep(20);
+            // pp = scanner.comparator.findImage(qID.getImage(), qaQOnly, null);
+            // }
 
             BufferedImage a1Only = qaImage.getSubimage(0, 140, 20, 20);
 
@@ -190,7 +416,8 @@ public class QuizMaster {
           // LOGGER.info("QV...");
           // captureQuestion(qaArea);
           // mouse.delay(100, false);
-          List<Question> possibleQuestions = getPossibleQuestions(qaArea);
+          qaImage = new Robot().createScreenCapture(qaArea);
+          List<Question> possibleQuestions = processor.getPossibleQuestions(qaImage);
           // LOGGER.info(possibleQuestions.size() + " possible questions");
           support.firePropertyChange("QUESTIONS_FOUND", null, possibleQuestions.size());
           if (!possibleQuestions.isEmpty()) {
@@ -254,21 +481,16 @@ public class QuizMaster {
   }
 
   public void loadQuestions() throws IOException {
-    LOGGER.info("Loading questions...");
-    int qs = processor.loadQuestions();
-    LOGGER.info(qs + " questions loaded!");
+    processor.loadQuestions();
+  }
+
+  public void loadQuestionsFULL() throws IOException {
+    processor.loadQuestionsFULL();
   }
 
   public void processNewQuestions() throws IOException {
     LOGGER.info("Processing new questions...");
     // processor.processSourceFolder();
-  }
-
-  private List<Question> getPossibleQuestions(Rectangle qaArea) throws AWTException {
-    BufferedImage im = new Robot().createScreenCapture(qaArea);
-    // im = QuizParams.toBW(im);
-    List<Question> possibleQuestions = processor.getPossibleQuestions(im);
-    return possibleQuestions;
   }
 
   private Pixel scanForAnswer(List<Question> possibleQuestions) throws AWTException, IOException,
@@ -324,7 +546,7 @@ public class QuizMaster {
         return p;
       } else
         mouse.delay(400, false);
-    } while (!started && turn < 42);
+    } while (!started && turn < 42 && !done);
 
     return null;
   }

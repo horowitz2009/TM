@@ -61,7 +61,7 @@ public class QuizProcessor {
   public QuizProcessor(ScreenScanner scannerP, Settings settings) throws IOException {
     super();
     scanner = scannerP;
-    
+
     scannerInt = new ScreenScanner(settings);
     scannerInt.comparator.setPrecision(QuizParams.COMPARATOR_PRECISION_INT);
     scannerInt.comparator.setMaxBWErrors(12);
@@ -76,10 +76,10 @@ public class QuizProcessor {
     this.settings = settings;
     this.mouse = scanner.getMouse();
     questions = new ArrayList<>(0);
-    
+
     scanner.getImageData(QuizParams.TOP_LEFT_CORNER).setColorToBypass(Color.red);
     scanner.getImageData(QuizParams.TOP_LEFT_CORNER_TOUR).setColorToBypass(Color.red);
-    
+
     scannerA.getImageData(QuizParams.TOP_LEFT_CORNER).setColorToBypass(Color.red);
     scannerA.getImageData(QuizParams.TOP_LEFT_CORNER_TOUR).setColorToBypass(Color.red);
     resetAreas();
@@ -507,6 +507,76 @@ public class QuizProcessor {
     return map;
   }
 
+  public List<Question> loadQuestions(String path, boolean full) throws IOException {
+    List<Question> res = null;
+    File dir = new File(path);
+    dir.mkdirs();
+    if (dir.exists() && dir.isDirectory()) {
+      System.out.println("loading questions from " + path);
+      File[] files = dir.listFiles(new FileFilter() {
+
+        @Override
+        public boolean accept(File f) {
+          return f.isFile() && f.getName().indexOf("-A") < 0;
+        }
+      });
+      // File[] files2 = Arrays.copyOf(files, files.length);
+      System.err.println("Processing " + files.length + " files...");
+      res = new ArrayList<>(1500);
+      for (int i = 0; i < files.length; i++) {
+        // Q-20171225-163924-588
+        res.add(buildQuestion(files[i], full));
+        System.err.print(".");
+        if ((i + 1) % 100 == 0)
+          System.err.println();
+      }
+      System.err.println();
+    }
+    return res;
+  }
+  private Question buildQuestion(final File file, final boolean full) throws IOException {
+    final String id = file.getName().split("\\.")[0];
+    Question q = new Question();
+    q.qFilename = file.getName();
+    q.qImage = ImageIO.read(file);
+    // System.err.println(id);
+
+    File[] answers = file.getParentFile().listFiles(new FileFilter() {
+      @Override
+      public boolean accept(File f) {
+        if (!full) {
+          return f.getName().startsWith(id) && f.getName().indexOf("CORRECT") > 0;
+        } else {
+          return f.getName().startsWith(id) && !f.getName().equals(file.getName());
+
+        }
+      }
+    });
+    if (!full) {
+      if (answers.length > 0) {
+        String ss = answers[0].getName().substring(id.length() + 2, id.length() + 3);
+        try {
+          q.correctAnswer = Integer.parseInt(ss);
+          BufferedImage image = ImageIO.read(answers[0]);
+          q.aImages[q.correctAnswer - 1] = image;
+        } catch (NumberFormatException e) {
+          q.correctAnswer = 0;
+        }
+      }
+    } else {
+      for (int i = 0; i < answers.length; i++) {
+        if (answers[i].getName().indexOf("CORRECT") >= 0) {
+          q.correctAnswer = i + 1;
+        }
+        BufferedImage image = ImageIO.read(answers[i]);
+        q.aImages[i] = image;
+        q.aFilenames[i] = answers[i].getName();
+      }
+    }
+    q.lastModified = file.lastModified();
+    return q;
+  }
+
   public List<Question> getPossibleQuestions(BufferedImage qaImage) {
     long start = System.currentTimeMillis();
     BufferedImage qImage = qaImage.getSubimage(qArea.x, qArea.y, qArea.width, qArea.height);
@@ -546,37 +616,21 @@ public class QuizProcessor {
     return image;
   }
 
-  public int loadQuestions() throws IOException {
-    this.questions = loadQuestions(QuizParams.DB_DESTINATION);
-    return questions.size();
+  public void loadQuestionsFULL() throws IOException {
+    LOGGER.info("Loading questions...");
+    this.questions = loadQuestions(QuizParams.DB_DESTINATION, true);
+    LOGGER.info(this.questions.size() + " questions loaded!");
   }
-
-  private List<Question> loadQuestions(String path) throws IOException {
-    List<Question> res = null;
-    File dir = new File(path);
-    dir.mkdirs();
-    if (dir.exists() && dir.isDirectory()) {
-      System.out.println("loading questions from " + path);
-      File[] files = dir.listFiles(new FileFilter() {
-
-        @Override
-        public boolean accept(File f) {
-          return f.isFile() && f.getName().indexOf("-A") < 0;
-        }
-      });
-      // File[] files2 = Arrays.copyOf(files, files.length);
-      System.err.println("Processing " + files.length + " files...");
-      res = new ArrayList<>(1500);
-      for (int i = 0; i < files.length; i++) {
-        // Q-20171225-163924-588
-        res.add(buildQuestion(files[i]));
-        System.err.print(".");
-        if ((i + 1) % 100 == 0)
-          System.err.println();
-      }
-      System.err.println();
-    }
-    return res;
+  
+  public void loadQuestions() throws IOException {
+    LOGGER.info("Loading questions...");
+    this.questions = loadQuestions(QuizParams.DB_DESTINATION, false);
+    LOGGER.info(this.questions.size() + " questions loaded!");
+  }
+  
+  public void processNewQuestions() throws IOException {
+    LOGGER.info("Processing new questions...");
+    // processor.processSourceFolder();
   }
 
   public void processSourceFolder(String folder) {
@@ -631,7 +685,7 @@ public class QuizProcessor {
     if (questions.isEmpty())
       loadQuestions();
 
-    List<Question> newQuestions = loadQuestions(path);
+    List<Question> newQuestions = loadQuestions(path, true);
     // thresholdImages(questions);
     System.err.println("Loaded " + newQuestions.size() + " new questions.");
 
@@ -677,7 +731,7 @@ public class QuizProcessor {
 
   public void testSearch(String path, String question) throws IOException {
     if (questions == null)
-      questions = loadQuestions(path);
+      questions = loadQuestions(path, true);
     // thresholdImages(questions);
     long start = System.currentTimeMillis();
     BufferedImage qImage = ImageIO.read(new File(question));
@@ -905,12 +959,12 @@ public class QuizProcessor {
 
       // quizProcessor.findQuestionByQuestion("C:/BACKUP/DBQUIZ/raw 20180101-191104-564/output/Q-20180101-191106-653.png");
       // quizProcessor.testMatcher("clearAnswer1.png", "topLeftCorner.png");
-       quizProcessor.testMatcher(
-       "C:\\BACKUP\\DBQUIZ\\raw 20180101-101135-137\\output\\hmm\\Q-20171231-011633-718-A1-CORRECT.png",
-       "C:\\BACKUP\\DBQUIZ\\raw 20180101-101135-137\\output\\hmm\\Q-20180101-101137-371-A2.png");
-       quizProcessor.testMatcher(
-           "C:\\BACKUP\\DBQUIZ\\raw 20180101-101135-137\\output\\hmm\\Q-20171231-011633-718-A1-CORRECT.png",
-           "C:\\BACKUP\\DBQUIZ\\raw 20180101-101135-137\\output\\hmm\\Q-20180101-101137-371-A1-CORRECT.png");
+      quizProcessor.testMatcher(
+          "C:\\BACKUP\\DBQUIZ\\raw 20180101-101135-137\\output\\hmm\\Q-20171231-011633-718-A1-CORRECT.png",
+          "C:\\BACKUP\\DBQUIZ\\raw 20180101-101135-137\\output\\hmm\\Q-20180101-101137-371-A2.png");
+      quizProcessor.testMatcher(
+          "C:\\BACKUP\\DBQUIZ\\raw 20180101-101135-137\\output\\hmm\\Q-20171231-011633-718-A1-CORRECT.png",
+          "C:\\BACKUP\\DBQUIZ\\raw 20180101-101135-137\\output\\hmm\\Q-20180101-101137-371-A1-CORRECT.png");
       // quizProcessor.testMatcher("C:/BACKUP/DBQUIZ/DB/Q-20171230-183825-256.png",
       // "C:/BACKUP/DBQUIZ/Q-20180101-191106-653.png");
       // quizProcessor.testMatcher("test3.png", "test3.bmp");
@@ -925,7 +979,7 @@ public class QuizProcessor {
       // "C:/BACKUP/DBQUIZ/READY/output", true);
 
       // quizProcessor.checkDBHealth();
-      //////////////////////////////////////////////quizProcessor.checkDBForDuplicates();
+      // ////////////////////////////////////////////quizProcessor.checkDBForDuplicates();
       // quizProcessor.processSourceFolder();
 
       // quizProcessor.processFolder("C:/backup/quizBIG1");

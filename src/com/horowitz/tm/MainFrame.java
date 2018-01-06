@@ -2882,13 +2882,15 @@ public class MainFrame extends JFrame {
     }
 
     {
-
-      AbstractAction action = new AbstractAction("Cap") {
+      
+      AbstractAction action = new AbstractAction("Play2") {
         public void actionPerformed(ActionEvent e) {
           Thread t = new Thread(new Runnable() {
             public void run() {
               try {
-                quizMaster.capture();
+                quizMaster.stop();
+                mouse.delay(200, false);
+                quizMaster.play2();
               } catch (RobotInterruptedException e) {
                 LOGGER.info("INTERRUPTED");
               } catch (IOException e) {
@@ -2896,15 +2898,40 @@ public class MainFrame extends JFrame {
               } catch (AWTException e) {
                 e.printStackTrace();
               }
-
+              
             }
           });
           t.start();
         }
-
+        
       };
       mainToolbar1.add(action);
     }
+    
+//    {
+//
+//      AbstractAction action = new AbstractAction("Cap") {
+//        public void actionPerformed(ActionEvent e) {
+//          Thread t = new Thread(new Runnable() {
+//            public void run() {
+//              try {
+//                quizMaster.capture();
+//              } catch (RobotInterruptedException e) {
+//                LOGGER.info("INTERRUPTED");
+//              } catch (IOException e) {
+//                e.printStackTrace();
+//              } catch (AWTException e) {
+//                e.printStackTrace();
+//              }
+//
+//            }
+//          });
+//          t.start();
+//        }
+//
+//      };
+//      mainToolbar1.add(action);
+//    }
     {
 
       AbstractAction action = new AbstractAction("Stop") {
