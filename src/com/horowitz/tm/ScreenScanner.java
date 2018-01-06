@@ -111,6 +111,7 @@ public class ScreenScanner extends BaseScreenScanner {
     
     getImageData("Continue.bmp", null, 19, 8);
     getImageData("ball.bmp", null, 8, 10);
+    getImageData("MultiplierZero.bmp", _scanAreaBR, 0, 0).setColorToBypass(Color.red);
   }
 
   public Pixel getParkingPoint() {

@@ -79,7 +79,7 @@ public class MainFrame extends JFrame {
 
   private static final int MIN_SPEED = SIMPLE ? 20 : 0;
 
-  private static String APP_TITLE = "TM v57b4";
+  private static String APP_TITLE = "TM v57b5";
 
   private MouseRobot mouse;
 
@@ -1501,7 +1501,7 @@ public class MainFrame extends JFrame {
 
     }
 
-    private Rectangle clockArea;
+    private Rectangle multiplierArea;
 
     private Pixel pairsStarted(boolean fast) throws AWTException, RobotInterruptedException, IOException {
       Pixel p = null;
@@ -1510,34 +1510,30 @@ public class MainFrame extends JFrame {
       do {
         turn++;
         p = scanner.scanOneFast("clockAnchor.bmp", scanner._scanArea4, false);
-        LOGGER.info("check is started..." + p);
+        LOGGER.info("clock visible... " + p);
         if (p != null) {
           started = true;
           if (fast)
             return p;
 
-          clockArea = new Rectangle(p.x + 897 - 15, p.y + 541 - 15, 18 + 40, 27 + 25);
-          Pixel pp3 = scanner.scanOneFast("MultiplierZero2.bmp", clockArea, false);
+          mouse.delay(100);
+          multiplierArea = new Rectangle(p.x + 897 - 15, p.y + 541 - 15, 18 + 40, 27 + 25);
+          Pixel pp3 = scanner.scanOne("MultiplierZero.bmp", multiplierArea, false);
           if (pp3 != null) {
-            LOGGER.info("clock found: " + pp3);
-            clockArea = new Rectangle(pp3.x - 1, pp3.y - 1, 18, 27);
+            LOGGER.info("multiplier found: " + pp3);
+            multiplierArea = new Rectangle(pp3.x - 1, pp3.y - 1, 18, 27);
           } else {
-            Rectangle scanArea = scanner._fullArea;
-            if (scanArea == null) {
-              scanArea = new Rectangle(Toolkit.getDefaultToolkit().getScreenSize());
-            }
-            Rectangle area = new Rectangle(scanArea);
-            area.x += 300;
-            area.y += 300;
-            area.width -= 300;
-            area.height -= 300;
-            pp3 = scanner.scanOneFast("MultiplierZero2.bmp", area, false);
+            Rectangle scanArea = scanner._scanAreaBR;
+            pp3 = scanner.scanOne("MultiplierZero.bmp", scanArea, false);
             if (pp3 != null) {
               LOGGER.info("clock area: " + pp3);
               // scanner.writeAreaTS(clockArea, "clockArea.bmp");
-              clockArea = new Rectangle(pp3.x - 1, pp3.y - 1, 18, 27);
+              multiplierArea = new Rectangle(pp3.x - 1, pp3.y - 1, 18, 27);
+            } else {
+              multiplierArea = new Rectangle(scanner._scanAreaBR);
             }
           }
+          LOGGER.info("multiArea: " + multiplierArea);
           return p;
         } else
           mouse.delay(400);
@@ -1570,7 +1566,7 @@ public class MainFrame extends JFrame {
             Pixel p2 = null;
             do {
               LOGGER.info("try to repeat...");
-              p2 = scanner.scanOneFast("replayButton.bmp", scanner._scanAreaBR, false);
+              p2 = scanner.scanOne("replayButton2.png", scanner._scanAreaBR, false);
               if (p2 == null)
                 mouse.delay(200);
             } while (p2 == null && turn++ < 6);
@@ -1846,7 +1842,7 @@ public class MainFrame extends JFrame {
           try {
             long threadTime = System.currentTimeMillis();
             do {
-              if (scanner.scanOneFast("MultiplierZero2.bmp", clockArea, false) == null) {
+              if (scanner.scanOne("MultiplierZero.bmp", multiplierArea, false) == null) {
                 if (time == 0) {
                   time = System.currentTimeMillis();
                   LOGGER.info("UH OH...");
