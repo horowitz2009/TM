@@ -79,7 +79,7 @@ public class MainFrame extends JFrame {
 
   private static final int MIN_SPEED = SIMPLE ? 20 : 0;
 
-  private static String APP_TITLE = "TM v57b5";
+  private static String APP_TITLE = "TM v57b6";
 
   private MouseRobot mouse;
 
@@ -2850,32 +2850,32 @@ public class MainFrame extends JFrame {
       };
       mainToolbar1.add(action);
     }
-    {
+//    {
 
-      AbstractAction action = new AbstractAction("Play") {
-        public void actionPerformed(ActionEvent e) {
-          Thread t = new Thread(new Runnable() {
-            public void run() {
-              try {
-                quizMaster.stop();
-                mouse.delay(200, false);
-                quizMaster.play();
-              } catch (RobotInterruptedException e) {
-                LOGGER.info("INTERRUPTED");
-              } catch (IOException e) {
-                e.printStackTrace();
-              } catch (AWTException e) {
-                e.printStackTrace();
-              }
-
-            }
-          });
-          t.start();
-        }
-
-      };
-      mainToolbar1.add(action);
-    }
+//      AbstractAction action = new AbstractAction("Play") {
+//        public void actionPerformed(ActionEvent e) {
+//          Thread t = new Thread(new Runnable() {
+//            public void run() {
+//              try {
+//                quizMaster.stop();
+//                mouse.delay(200, false);
+//                quizMaster.play();
+//              } catch (RobotInterruptedException e) {
+//                LOGGER.info("INTERRUPTED");
+//              } catch (IOException e) {
+//                e.printStackTrace();
+//              } catch (AWTException e) {
+//                e.printStackTrace();
+//              }
+//
+//            }
+//          });
+//          t.start();
+//        }
+//
+//      };
+//      mainToolbar1.add(action);
+//    }
 
     {
       

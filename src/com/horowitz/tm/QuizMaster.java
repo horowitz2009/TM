@@ -37,7 +37,7 @@ public class QuizMaster {
 
   private boolean tournamentMode = false;
   private ScreenScanner scanner;
-  private ScreenScanner scannerInt;
+  //private ScreenScanner scannerInt;
   private Settings settings;
   private MouseRobot mouse;
   private boolean questionDisplayed = false;
@@ -58,8 +58,6 @@ public class QuizMaster {
 
   private QuizProcessor processor;
 
-  private CrazyImageComparator comparatorBW;
-
   public static void main(String[] args) {
     Settings settings = Settings.createSettings("tm.properties");
     try {
@@ -69,10 +67,10 @@ public class QuizMaster {
       BufferedImage image1 = ImageIO.read(new File("C:\\Users\\zhristov\\Dropbox\\TennisMania\\jimmya2.png"));
       BufferedImage image2 = ImageIO.read(new File("C:\\Users\\zhristov\\Dropbox\\TennisMania\\jimmyq.png"));
       Pixel p;
-      p = quizMaster.comparatorBW.findImage(image1, image2);
+      p = quizMaster.processor.comparatorBW.findImage(image1, image2);
       System.err.println("1: " + p);
-      quizMaster.comparatorBW.setThreshold(.9);
-      p = quizMaster.comparatorBW.findImage(image1, image2);
+      quizMaster.processor.comparatorBW.setThreshold(.9);
+      p = quizMaster.processor.comparatorBW.findImage(image1, image2);
       System.err.println("2: " + p);
     } catch (IOException e) {
       e.printStackTrace();
@@ -87,19 +85,15 @@ public class QuizMaster {
     scanner = scannerP;
     scanner.comparator.setPrecision(QuizParams.COMPARATOR_PRECISION);
 
-    scannerInt = new ScreenScanner(settings);
-    scannerInt.comparator.setPrecision(QuizParams.COMPARATOR_PRECISION_INT);
+    //scannerInt = new ScreenScanner(settings);
+    //scannerInt.comparator.setPrecision(QuizParams.COMPARATOR_PRECISION_INT);
 
-    comparatorBW = new CrazyImageComparator();
-    comparatorBW.setBW(true);
-    comparatorBW.setThreshold(0.99);
 
     this.mouse = scanner.getMouse();
     this.processor = new QuizProcessor(scanner, settings);
     scanner.getImageData(QuizParams.TOP_LEFT_CORNER).setColorToBypass(Color.red);
     scanner.getImageData("topLeftCorner6.bmp").setColorToBypass(Color.red);
-    scannerInt.getImageData("topLeftCorner6.bmp").setColorToBypass(Color.red);
-    scannerInt.getImageData("clearAnswer1T.png").setColorToBypass(Color.red);
+    
     scanner.getImageData("correctAnswerTopLeft.png").setColorToBypass(Color.red);
 
     scanner.getImageData(QuizParams.TOP_LEFT_CORNER_TOUR).setColorToBypass(Color.red);
@@ -154,7 +148,7 @@ public class QuizMaster {
   }
 
   private boolean answersVisible(boolean scanIt) throws IOException, AWTException {
-    ImageData aID = scannerInt.getImageData(tournamentMode ? "clearAnswer1T.png" : "clearAnswer1.png");
+    ImageData aID = processor.scannerInt.getImageData(tournamentMode ? "clearAnswer1T.png" : "clearAnswer1.png");
     BufferedImage a1Only;
     if (scanIt) {
       a1Only = new Robot().createScreenCapture(aDisplayedArea);
@@ -164,7 +158,7 @@ public class QuizMaster {
       } else
         a1Only = new Robot().createScreenCapture(aDisplayedArea);
     }
-    Pixel pp2 = scannerInt.comparator.findImage(aID.getImage(), a1Only, Color.red);
+    Pixel pp2 = processor.scannerInt.comparator.findImage(aID.getImage(), a1Only, Color.red);
     return pp2 != null;
   }
 
@@ -264,7 +258,7 @@ public class QuizMaster {
         if (debug)
           scanner.writeImageTS(aiImage, "aImage" + (i + 1) + ".png");
 
-        Pixel c = comparatorBW.findImage(aiImage, correctImage);
+        Pixel c = processor.comparatorBW.findImage(aiImage, correctImage);
         //System.err.println(""+(i+1)+": " + c);
         if (c != null) {
           // found it
@@ -363,16 +357,16 @@ public class QuizMaster {
 
             Pixel pp2 = null;
             if (waitForAnswer && pp != null) {
-              ImageData aID = scannerInt.getImageData(tournamentMode ? "clearAnswer1T.png" : "clearAnswer1.png");
+              ImageData aID = processor.scannerInt.getImageData(tournamentMode ? "clearAnswer1T.png" : "clearAnswer1.png");
 
-              pp2 = scannerInt.comparator.findImage(aID.getImage(), a1Only, Color.red);
+              pp2 = processor.scannerInt.comparator.findImage(aID.getImage(), a1Only, Color.red);
               // pp2 = scannerInt.findImage("clearAnswer1.png", aDisplayedArea);
               if (pp2 != null) {
                 captureQuestion(qaImage);
                 Thread.sleep(200);
               } else {
                 // try answered
-                pp2 = scannerInt.findImage(tournamentMode ? "correctAnswer1T.png" : "correctAnswer1.png",
+                pp2 = processor.scannerInt.findImage(tournamentMode ? "correctAnswer1T.png" : "correctAnswer1.png",
                     aDisplayedArea);// ,
                 // BufferedImage im = new Robot().createScreenCapture(qaArea);
                 int a = processor.findGreenAnswer(qaImage);
@@ -395,70 +389,6 @@ public class QuizMaster {
       }
     });
     t.start();
-  }
-
-  public void play() throws AWTException, RobotInterruptedException, IOException {
-    Pixel p = clockVisible();
-    if (p != null) {
-      LOGGER.info("GOGOGO");
-      resetAreas(p);
-
-      boolean firstTime = true;
-      done = false;
-      // scanner.captureArea(qDisplayedArea, "quiz/qdisparea.bmp", true);
-      runQDisplayedThread(true);
-      boolean moved = false;
-      long lastMoved = System.currentTimeMillis();
-      do {
-        // LOGGER.info("c");
-        // scan if question is displayed
-        if (questionDisplayed) {
-          // LOGGER.info("QV...");
-          // captureQuestion(qaArea);
-          // mouse.delay(100, false);
-          qaImage = new Robot().createScreenCapture(qaArea);
-          List<Question> possibleQuestions = processor.getPossibleQuestions(qaImage);
-          // LOGGER.info(possibleQuestions.size() + " possible questions");
-          support.firePropertyChange("QUESTIONS_FOUND", null, possibleQuestions.size());
-          if (!possibleQuestions.isEmpty()) {
-            Pixel pa = scanForAnswer(possibleQuestions);
-            if (pa != null) {
-              if (!moved) {
-                mouse.mouseMove(pa);
-                lastMoved = System.currentTimeMillis();
-                moved = true;
-                mouse.click();
-                mouse.delay(3100, false);
-              }
-              mouse.delay(100, false);
-            }
-          } else {
-            if (firstTime) {
-              LOGGER.info("UNKNOWN QUESTION!");
-              // AudioTools.playWarning();
-              mouse.delay(100, false);
-              firstTime = false;
-            } else {
-              mouse.delay(100, false);
-            }
-            // captureQuestion(qaArea);
-            moved = false;
-          }
-
-        } else {
-          moved = false;
-          firstTime = true;
-          lastP = null;
-          mouse.delay(100, false);
-        }
-
-        // plan B
-        if (System.currentTimeMillis() - lastMoved > 5000) {
-          moved = false;
-        }
-      } while (!done);
-
-    }
   }
 
   private void resetAreas(Pixel p) throws IOException {
@@ -484,26 +414,22 @@ public class QuizMaster {
     processor.loadQuestions();
   }
 
-  public void loadQuestionsFULL() throws IOException {
-    processor.loadQuestionsFULL();
-  }
-
   public void processNewQuestions() throws IOException {
     LOGGER.info("Processing new questions...");
     // processor.processSourceFolder();
   }
 
-  private Pixel scanForAnswer(List<Question> possibleQuestions) throws AWTException, IOException,
-      RobotInterruptedException {
-    BufferedImage im = new Robot().createScreenCapture(qaArea);
-    // scanner.comparator.setThreshold(0.99);
-    // scanner.comparator.setPrecision(10);
-    Pixel p = processor.findAnswer(im, possibleQuestions);
-    if (p != null) {
-      return new Pixel(p.x + qaArea.x, p.y + qaArea.y);
-    }
-    return null;
-  }
+//  private Pixel scanForAnswer(List<Question> possibleQuestions) throws AWTException, IOException,
+//      RobotInterruptedException {
+//    BufferedImage im = new Robot().createScreenCapture(qaArea);
+//    // scanner.comparator.setThreshold(0.99);
+//    // scanner.comparator.setPrecision(10);
+//    Pixel p = processor.findAnswer(im, possibleQuestions);
+//    if (p != null) {
+//      return new Pixel(p.x + qaArea.x, p.y + qaArea.y);
+//    }
+//    return null;
+//  }
 
   private void captureQuestion(Rectangle qaArea) {
     try {
