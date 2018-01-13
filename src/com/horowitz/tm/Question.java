@@ -16,7 +16,7 @@ public class Question {
   public boolean dup;
   public String originalFile;
   public long lastModified;
-
+  
   public Question() {
     aFilenames = new String[4];
     aImages = new BufferedImage[4];

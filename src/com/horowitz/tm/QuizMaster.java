@@ -37,7 +37,7 @@ public class QuizMaster {
 
   private boolean tournamentMode = false;
   private ScreenScanner scanner;
-  //private ScreenScanner scannerInt;
+  // private ScreenScanner scannerInt;
   private Settings settings;
   private MouseRobot mouse;
   private boolean questionDisplayed = false;
@@ -85,15 +85,14 @@ public class QuizMaster {
     scanner = scannerP;
     scanner.comparator.setPrecision(QuizParams.COMPARATOR_PRECISION);
 
-    //scannerInt = new ScreenScanner(settings);
-    //scannerInt.comparator.setPrecision(QuizParams.COMPARATOR_PRECISION_INT);
-
+    // scannerInt = new ScreenScanner(settings);
+    // scannerInt.comparator.setPrecision(QuizParams.COMPARATOR_PRECISION_INT);
 
     this.mouse = scanner.getMouse();
     this.processor = new QuizProcessor(scanner, settings);
     scanner.getImageData(QuizParams.TOP_LEFT_CORNER).setColorToBypass(Color.red);
     scanner.getImageData("topLeftCorner6.bmp").setColorToBypass(Color.red);
-    
+
     scanner.getImageData("correctAnswerTopLeft.png").setColorToBypass(Color.red);
 
     scanner.getImageData(QuizParams.TOP_LEFT_CORNER_TOUR).setColorToBypass(Color.red);
@@ -164,14 +163,17 @@ public class QuizMaster {
 
   private List<Question> possibleQuestions;
 
+  private boolean auto;
+
   public void play2() throws AWTException, RobotInterruptedException, IOException {
     possibleQuestions = null;
     done = false;
+    int cnt = 0;
     Pixel p = clockVisible();
     if (p != null) {
       LOGGER.info("GO GO GO");
       resetAreas(p);
-
+      long quizStart = System.currentTimeMillis();
       // TODO boolean questionAnswered = false;
       do {
         if (questionVisible()) {
@@ -180,6 +182,17 @@ public class QuizMaster {
           if (newPossibleQuestions.isEmpty()) {
             waitForAnswers();
             captureQuestion(qaImage);
+            if (auto) {
+              mouse.delay(4800);// will interrup if mouse moved!!!
+              captureAgainInSeparateThread();
+              mouse.delay(200, false);
+              clickTheAnswer(1);
+              cnt++;
+              LOGGER.info("waiting 4s ...");
+              mouse.delay(4000, false);
+            } else {
+              captureAgainInSeparateThread();
+            }
           } else {
             // waiting for the answer
             possibleQuestions = newPossibleQuestions;
@@ -193,6 +206,10 @@ public class QuizMaster {
             }
             if (answer > 0) {
               clickTheAnswer(answer);
+              if (auto) {
+                cnt++;
+                LOGGER.info("q cnt: " + cnt);
+              }
               LOGGER.info("waiting 3s ...");
               mouse.delay(3200, false);
             }
@@ -200,15 +217,67 @@ public class QuizMaster {
           }// possible questions
 
         }// q visible
+        else {
+          if (settings.getBoolean("tasks.pairs.repeat", false)) {
+
+            mouse.delay(200);// chance to interrupt
+            Pixel p2 = null;
+            Rectangle area = new Rectangle(p.x - 18 + 540, p.y - 22 + 444, 170, 40);
+            p2 = scanner.scanOne("replayButton2.png", area, false);
+            if (p2 == null)
+              p2 = scanner.scanOne("replayButton.bmp", area, false);
+
+            if (p2 != null) {
+              mouse.click(p2.x, p2.y + 17);
+              LOGGER.info("PLAY AGAIN...");
+              quizStart = System.currentTimeMillis();
+              mouse.delay(400);
+            }
+
+          }
+        }
         mouse.delay(50, false);
+        if (auto) {
+          Long now = System.currentTimeMillis();
+          if (now - quizStart > 1.5 * 60000) {
+            LOGGER.info("Time's up!");
+            done = true;
+          }
+        }
       } while (!done);
 
     }
   }
 
+  private void captureAgainInSeparateThread() {
+    Thread t = new Thread(new Runnable() {
+      public void run() {
+        int time = 5000;
+        long start = System.currentTimeMillis();
+        do {
+          try {
+            Thread.sleep(240);
+          } catch (InterruptedException e) {
+            System.err.println("WHAAAAAAAAAAAAAAAAAAAAT");
+          }
+          try {
+            if (questionVisible()) {
+              if (processor.findGreenAnswer(qaImage, isTournamentMode()) > 0)
+                captureQuestion(qaImage);
+            }
+          } catch (IOException | AWTException e) {
+            e.printStackTrace();
+          }
+          // TODO capture in memory and stop when find green
+        } while (System.currentTimeMillis() - start < time);
+      }
+    });
+    t.start();
+  }
+
   private int scanAnswers(BufferedImage qaImage2) {
     for (Question q : possibleQuestions) {
-      //LOGGER.info("Checking answer " + q);
+      // LOGGER.info("Checking answer " + q);
       int answer = checkQuestion(qaImage, q);
       if (answer > 0)
         return answer;
@@ -259,7 +328,7 @@ public class QuizMaster {
           scanner.writeImageTS(aiImage, "aImage" + (i + 1) + ".png");
 
         Pixel c = processor.comparatorBW.findImage(aiImage, correctImage);
-        //System.err.println(""+(i+1)+": " + c);
+        // System.err.println(""+(i+1)+": " + c);
         if (c != null) {
           // found it
           return (i + 1);
@@ -357,7 +426,8 @@ public class QuizMaster {
 
             Pixel pp2 = null;
             if (waitForAnswer && pp != null) {
-              ImageData aID = processor.scannerInt.getImageData(tournamentMode ? "clearAnswer1T.png" : "clearAnswer1.png");
+              ImageData aID = processor.scannerInt.getImageData(tournamentMode ? "clearAnswer1T.png"
+                  : "clearAnswer1.png");
 
               pp2 = processor.scannerInt.comparator.findImage(aID.getImage(), a1Only, Color.red);
               // pp2 = scannerInt.findImage("clearAnswer1.png", aDisplayedArea);
@@ -369,7 +439,7 @@ public class QuizMaster {
                 pp2 = processor.scannerInt.findImage(tournamentMode ? "correctAnswer1T.png" : "correctAnswer1.png",
                     aDisplayedArea);// ,
                 // BufferedImage im = new Robot().createScreenCapture(qaArea);
-                int a = processor.findGreenAnswer(qaImage);
+                int a = processor.findGreenAnswer(qaImage, isTournamentMode());
                 if (a > 0) {
                   captureQuestion(qaImage);
                   Thread.sleep(200);
@@ -419,17 +489,18 @@ public class QuizMaster {
     // processor.processSourceFolder();
   }
 
-//  private Pixel scanForAnswer(List<Question> possibleQuestions) throws AWTException, IOException,
-//      RobotInterruptedException {
-//    BufferedImage im = new Robot().createScreenCapture(qaArea);
-//    // scanner.comparator.setThreshold(0.99);
-//    // scanner.comparator.setPrecision(10);
-//    Pixel p = processor.findAnswer(im, possibleQuestions);
-//    if (p != null) {
-//      return new Pixel(p.x + qaArea.x, p.y + qaArea.y);
-//    }
-//    return null;
-//  }
+  // private Pixel scanForAnswer(List<Question> possibleQuestions) throws
+  // AWTException, IOException,
+  // RobotInterruptedException {
+  // BufferedImage im = new Robot().createScreenCapture(qaArea);
+  // // scanner.comparator.setThreshold(0.99);
+  // // scanner.comparator.setPrecision(10);
+  // Pixel p = processor.findAnswer(im, possibleQuestions);
+  // if (p != null) {
+  // return new Pixel(p.x + qaArea.x, p.y + qaArea.y);
+  // }
+  // return null;
+  // }
 
   private void captureQuestion(Rectangle qaArea) {
     try {
@@ -520,5 +591,28 @@ public class QuizMaster {
 
   public void removePropertyChangeListener(String propertyName, PropertyChangeListener listener) {
     support.removePropertyChangeListener(propertyName, listener);
+  }
+
+  public void captureScreen() {
+    LOGGER.info("CAPTURING SCREEN...");
+    done = false;
+    Thread t = new Thread(new Runnable() {
+      public void run() {
+        do {
+          try {
+            mouse.delay(500, false);
+          } catch (RobotInterruptedException e) {
+          }
+          scanner.writeAreaTS(scanner._fullArea, "tour.png");
+        } while (!done);
+      }
+    });
+    t.start();
+
+  }
+
+  public void setAuto(boolean b) {
+    auto = b;
+
   }
 }

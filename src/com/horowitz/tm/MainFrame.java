@@ -79,7 +79,7 @@ public class MainFrame extends JFrame {
 
   private static final int MIN_SPEED = SIMPLE ? 20 : 0;
 
-  private static String APP_TITLE = "TM v57b6";
+  private static String APP_TITLE = "TM v57b12";
 
   private MouseRobot mouse;
 
@@ -99,6 +99,7 @@ public class MainFrame extends JFrame {
   private JToggleButton _tourToggle;
   private JToggleButton _practiceToggle;
   private JToggleButton _pairsToggle;
+  private JToggleButton _quizToggle;
   private JToggleButton _matchesToggle;
   private JToggleButton _bankToggle;
   private JToggleButton _clubToggle;
@@ -115,6 +116,7 @@ public class MainFrame extends JFrame {
   private Task ballTask;
   private Task bankTask;
   private Task pairsTask;
+  private Task quizTask;
   private Task sfTask;
   private Task rankingsTask;
 
@@ -184,6 +186,7 @@ public class MainFrame extends JFrame {
       ballTask();
       practiceTaskSIM();
       practiceTaskPAIRS();
+      practiceTaskQUIZ();
       matchTask();
       bankTask();
       premiumTask();
@@ -198,6 +201,7 @@ public class MainFrame extends JFrame {
         taskManager.addTask(sponsorTask);
         taskManager.addTask(practiceTask);
         taskManager.addTask(pairsTask);
+        taskManager.addTask(quizTask);
         taskManager.addTask(checkDuelsTask);
         taskManager.addTask(matchTask);
         taskManager.addTask(bankTask);
@@ -1064,14 +1068,11 @@ public class MainFrame extends JFrame {
               mouse.delay(3500);
               p = null;
               if (settings.getBoolean("tasks.club.premium", false)) {
-                Rectangle area = new Rectangle(scanner._fullArea);
-                area.y = scanner._br.y - 195;
-                area.height = 195;
-                area.x += 300;
-                area.width -= (300 + 150);
-                p = scanner.scanOneFast("clubClaim.bmp", area, false);
+                Rectangle area = new Rectangle((int) scanner._tl.x + scanner.getGameWidth() / 6, scanner._br.y - 200,
+                    (int) (scanner.getGameWidth() * 0.67), 200);
+                p = scanner.scanOneFast("clubClaim2.png", area, false);
                 if (p != null) {
-                  mouse.click(p.x + 20, p.y + 12);
+                  mouse.click(p.x - 20, p.y + 12);
                   mouse.delay(2400);
                   clickBankDirectly();
                   mouse.delay(2400);
@@ -1389,6 +1390,10 @@ public class MainFrame extends JFrame {
     pairsTask = new Task("PRACTICE PAIRS", 1);
     pairsTask.setProtocol(new PairsProtocol());
   }
+  private void practiceTaskQUIZ() {
+    quizTask = new Task("PRACTICE QUIZ", 1);
+    quizTask.setProtocol(new QuizProtocol());
+  }
 
   private final class PairsProtocol extends AbstractGameProtocol {
 
@@ -1546,7 +1551,7 @@ public class MainFrame extends JFrame {
         IOException, AWTException {
       boolean can = false;
       do {
-        Pixel p = pairsStarted(fast);
+        Pixel p = pairsStarted(fast);// 18,22 540, 444 170x40
         if (p != null) {
           time = 0;
           final Pixel pp = p;
@@ -1565,11 +1570,14 @@ public class MainFrame extends JFrame {
             int turn = 0;
             Pixel p2 = null;
             do {
-              LOGGER.info("try to repeat...");
-              p2 = scanner.scanOne("replayButton2.png", scanner._scanAreaBR, false);
+              LOGGER.info("try to repeat...");// //18,22 540, 444 170x40
+              Rectangle area = new Rectangle(p.x - 18 + 540, p.y - 22 + 444, 170, 40);
+              p2 = scanner.scanOne("replayButton2.png", area, false);
+              if (p2 == null)
+                p2 = scanner.scanOne("replayButton.bmp", area, false);
               if (p2 == null)
                 mouse.delay(200);
-            } while (p2 == null && turn++ < 6);
+            } while (p2 == null && turn++ < 16);
 
             if (p2 != null) {
               mouse.click(p2.x, p2.y + 17);
@@ -1996,6 +2004,159 @@ public class MainFrame extends JFrame {
     }
 
   }
+  
+  private final class QuizProtocol extends AbstractGameProtocol {
+
+    private boolean done = false;
+    private long time = 0l;
+    private int pairsScanned = 0;
+    private Map<Coords, Slot> matrix;
+    private int mcols;
+    private int mrows;
+    private List<Slot[]> matches;
+    private List<Slot> scanned;
+
+    @Override
+    public void execute() throws RobotInterruptedException, GameErrorException {
+      if (_quizToggle.isSelected())
+        try {
+
+          // 1.
+          mouse.delay(500);
+          String minigame = "Quiz";
+
+          mouse.click((scanner.getTopLeft().x + scanner.getGameWidth() / 2) - 130, scanner.getTopLeft().y + 63);
+          mouse.delay(3000);
+
+          {// mouse.click(p.x + 321, p.y - 61);
+           // mouse.delay(4000);
+            Pixel p = scanner.scanOneFast("practiceArena.bmp", scanner._fullArea, false);
+            if (p != null) {
+              LOGGER.info("Practice arena...");
+              Rectangle area = new Rectangle(p.x - 194, p.y + 129, 650, 134);
+              // scanner.writeArea(area, "hmm.bmp");
+              Pixel pq = scanner.scanOne(minigame + ".bmp", area, false);
+              if (pq == null) {
+                for (int i = 0; i < 6; i++) {
+                  mouse.click(p.x - 214, p.y + 295);
+                  mouse.delay(500);
+                }
+              }
+              pq = scanner.scanOne(minigame + ".bmp", area, false);
+              if (pq == null) {
+                for (int i = 0; i < 6; i++) {
+                  mouse.click(p.x + 476, p.y + 295);
+                  mouse.delay(1400);
+                  pq = scanner.scanOne(minigame + ".bmp", area, false);
+                  if (pq != null)
+                    break;
+                }
+              }
+              if (pq != null) {
+                mouse.click(pq.x, pq.y + 226);
+                mouse.delay(4000);
+                
+                if (!doQuiz()) {
+                  LOGGER.info("no energy");
+                  LOGGER.info("sleep 5min");
+                  sleep(5 * 60000);
+                  handlePopups();
+                } else {
+                  mouse.delay(6000);
+
+                  // AFTER GAME
+                  captureScreen("ping/pairs ");
+                  deleteOlder("ping", "pairs", -1, 24);
+                  stats.register("Pairs");
+                  p = scanner.scanOneFast("ContinueBrown2.bmp", scanner._scanArea, true);
+                  if (p == null)
+                    p = scanner.scanOneFast("ContinueBrown.bmp", scanner._scanArea, true);
+                  if (p == null) {
+                    int xx = (scanner.getTopLeft().x + scanner.getGameWidth() / 2);
+
+                    p = scanner.scanOneFast("prizePractice.bmp", scanner._scanArea, true);
+                    if (p != null) {
+                      handleAwards();
+                    } else {
+                      p = scanner.scanOneFast("PairsResultTitle.bmp", scanner._scanArea, true);
+                      if (p != null) {
+                        mouse.click(p.x + 52, p.y + 315);
+                        mouse.click(p.x + 202, p.y + 315);
+                        mouse.delay(5000);
+                        handleAwards();
+                      } else {
+                        mouse.click(xx - 124, pq.y + 285 - 18);
+                        mouse.click(xx - 62, pq.y + 285 - 18);
+                        mouse.click(xx - 0, pq.y + 285 - 18);
+                      }
+                      mouse.delay(3000);
+                      refresh();
+                    }
+                  } else
+                    mouse.delay(6000);
+
+                  handlePopups();
+                  mouse.delay(1000);
+                }
+              } else {
+                LOGGER.info("Uh oh! Can't find " + minigame + "!");
+                // handlePopups(false);
+                refresh();
+              }
+            }
+          }
+        } catch (IOException | AWTException e) {
+          e.printStackTrace();
+        }
+
+    }
+
+
+    private Pixel quizStarted() throws AWTException, RobotInterruptedException, IOException {
+      Pixel p = null;
+      boolean started = false;
+      int turn = 0;
+      do {
+        turn++;
+        p = scanner.scanOneFast("clockAnchor.bmp", scanner._scanArea4, false);
+        LOGGER.info("clock visible... " + p);
+        if (p != null) {
+          started = true;
+          mouse.delay(100);
+          return p;
+        } else
+          mouse.delay(400);
+      } while (!started && turn < 12);
+
+      return null;
+    }
+
+    public boolean doQuiz() throws RobotInterruptedException,
+        IOException, AWTException {
+      boolean can = false;
+      do {
+        Pixel p = quizStarted();// 18,22 540, 444 170x40
+        if (p != null) {
+          time = 0;
+
+          quizMaster.setAuto(true);
+          quizMaster.play2();
+          quizMaster.setAuto(false);
+          quizMaster.save();
+          // TODO repeat?
+          can = false;
+
+        } else {
+          // no energy or other problem
+          return false;
+        }
+      } while (can);
+
+      // at least once the pairs have been played
+      return true;
+    }
+
+  }
 
   private BufferedImage scanSlot(Rectangle slotArea) throws AWTException {
     // scanner.writeAreaTS(slotArea, "slotarea.bmp");
@@ -2394,6 +2555,17 @@ public class MainFrame extends JFrame {
         boolean b = e.getStateChange() == ItemEvent.SELECTED;
         LOGGER.info("Pairs: " + (b ? "on" : "off"));
         settings.setProperty("tasks.pairs", "" + b);
+        settings.saveSettingsSorted();
+      }
+    });
+    _quizToggle = new JToggleButton("Q");
+    toolbar.add(_quizToggle);
+    _quizToggle.addItemListener(new ItemListener() {
+      @Override
+      public void itemStateChanged(ItemEvent e) {
+        boolean b = e.getStateChange() == ItemEvent.SELECTED;
+        LOGGER.info("Quiz: " + (b ? "on" : "off"));
+        settings.setProperty("tasks.quiz", "" + b);
         settings.saveSettingsSorted();
       }
     });
@@ -2850,36 +3022,36 @@ public class MainFrame extends JFrame {
       };
       mainToolbar1.add(action);
     }
-//    {
+    // {
 
-//      AbstractAction action = new AbstractAction("Play") {
-//        public void actionPerformed(ActionEvent e) {
-//          Thread t = new Thread(new Runnable() {
-//            public void run() {
-//              try {
-//                quizMaster.stop();
-//                mouse.delay(200, false);
-//                quizMaster.play();
-//              } catch (RobotInterruptedException e) {
-//                LOGGER.info("INTERRUPTED");
-//              } catch (IOException e) {
-//                e.printStackTrace();
-//              } catch (AWTException e) {
-//                e.printStackTrace();
-//              }
-//
-//            }
-//          });
-//          t.start();
-//        }
-//
-//      };
-//      mainToolbar1.add(action);
-//    }
+    // AbstractAction action = new AbstractAction("Play") {
+    // public void actionPerformed(ActionEvent e) {
+    // Thread t = new Thread(new Runnable() {
+    // public void run() {
+    // try {
+    // quizMaster.stop();
+    // mouse.delay(200, false);
+    // quizMaster.play();
+    // } catch (RobotInterruptedException e) {
+    // LOGGER.info("INTERRUPTED");
+    // } catch (IOException e) {
+    // e.printStackTrace();
+    // } catch (AWTException e) {
+    // e.printStackTrace();
+    // }
+    //
+    // }
+    // });
+    // t.start();
+    // }
+    //
+    // };
+    // mainToolbar1.add(action);
+    // }
 
     {
-      
-      AbstractAction action = new AbstractAction("Play2") {
+
+      AbstractAction action = new AbstractAction("PLAY") {
         public void actionPerformed(ActionEvent e) {
           Thread t = new Thread(new Runnable() {
             public void run() {
@@ -2887,6 +3059,7 @@ public class MainFrame extends JFrame {
                 quizMaster.stop();
                 mouse.delay(200, false);
                 quizMaster.play2();
+                
               } catch (RobotInterruptedException e) {
                 LOGGER.info("INTERRUPTED");
               } catch (IOException e) {
@@ -2894,40 +3067,36 @@ public class MainFrame extends JFrame {
               } catch (AWTException e) {
                 e.printStackTrace();
               }
-              
+
             }
           });
           t.start();
         }
-        
+
       };
       mainToolbar1.add(action);
     }
-    
-//    {
-//
-//      AbstractAction action = new AbstractAction("Cap") {
-//        public void actionPerformed(ActionEvent e) {
-//          Thread t = new Thread(new Runnable() {
-//            public void run() {
-//              try {
-//                quizMaster.capture();
-//              } catch (RobotInterruptedException e) {
-//                LOGGER.info("INTERRUPTED");
-//              } catch (IOException e) {
-//                e.printStackTrace();
-//              } catch (AWTException e) {
-//                e.printStackTrace();
-//              }
-//
-//            }
-//          });
-//          t.start();
-//        }
-//
-//      };
-//      mainToolbar1.add(action);
-//    }
+
+    {
+
+      AbstractAction action = new AbstractAction("Cap") {
+        public void actionPerformed(ActionEvent e) {
+          Thread t = new Thread(new Runnable() {
+            public void run() {
+              try {
+                quizMaster.captureScreen();
+              } catch (Exception e) {
+                e.printStackTrace();
+              }
+
+            }
+          });
+          t.start();
+        }
+
+      };
+      mainToolbar1.add(action);
+    }
     {
 
       AbstractAction action = new AbstractAction("Stop") {
@@ -3458,6 +3627,11 @@ public class MainFrame extends JFrame {
     if (pairs != _pairsToggle.isSelected()) {
       _pairsToggle.setSelected(pairs);
     }
+    
+    boolean quiz = "true".equalsIgnoreCase(settings.getProperty("tasks.quiz"));
+    if (quiz != _quizToggle.isSelected()) {
+      _quizToggle.setSelected(quiz);
+    }
 
     boolean matches = "true".equalsIgnoreCase(settings.getProperty("tasks.matches"));
     if (matches != _matchesToggle.isSelected()) {
@@ -3723,12 +3897,13 @@ public class MainFrame extends JFrame {
   }
 
   private void clickBankDirectly() throws RobotInterruptedException, IOException, AWTException {
+    mouse.delay(2000);
     mouse.click(scanner.getBottomRight().x - 84, scanner.getTopLeft().y + 68);
-    mouse.delay(1500);
+    mouse.delay(2000);
     Pixel p = scanner.scanOneFast("Finances.bmp", scanner._scanArea, false);
     if (p != null) {
       mouse.click(p.x - 194, p.y + 368);
-      mouse.delay(1500);
+      mouse.delay(2000);
     } else {
       // we have problem finding the bank
       // try with image
