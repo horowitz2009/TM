@@ -237,6 +237,46 @@ public class QuizProcessor {
     }
   }
 
+  public void analyzeDB() {
+    try {
+      if (questions.isEmpty())
+        loadQuestionsFULL();
+      File outputDir = new File(QuizParams.DB_DESTINATION + "/output2");
+      if (outputDir.exists())
+        QuizParams.deleteTree(outputDir);
+      List<Question> copy = new ArrayList<>(questions);
+
+      for (Question q : questions) {
+        List<Question> possibleQuestions = getPossibleQuestions2(copy, q.qImage);
+        if (possibleQuestions.size() == 1) {
+          // System.err.println("SINGLE:"+q);
+        } else if (possibleQuestions.size() > 1) {
+          copy.removeAll(possibleQuestions);
+          File f = new File(outputDir.getAbsolutePath() + "/" + q.qFilename.substring(0, q.qFilename.length() - 4));
+          f.mkdirs();
+          // System.err.println("QUESTION: " + q);
+          double old = comparatorBW.getThreshold();
+          comparatorBW.setThreshold(.85);
+          List<Question> eliminateDuplicates = eliminateDuplicates(possibleQuestions);
+          comparatorBW.setThreshold(old);
+          System.err.println("AFTER ELIMINATION: " + possibleQuestions.size() + " - " + eliminateDuplicates.size());
+
+          if (possibleQuestions.size() != eliminateDuplicates.size())
+            System.err.println("=======================================================");
+          for (Question question : eliminateDuplicates) {
+            System.err.println("DUPS: " + question);
+            question.writeImages2(f);
+          }
+          System.err.println();
+
+        }
+      }
+
+    } catch (Exception e) {
+      System.err.println(e);
+    }
+  }
+
   public void checkDBForDuplicates() {
     try {
       if (questions.isEmpty())
@@ -300,14 +340,15 @@ public class QuizProcessor {
     int sameAnswers = 0;
     if (qsame) {
       for (int i = 0; i < 4; i++) {
-        if (q1.aImages[i] == null) {
-          try {
-            Question qFull = buildQuestion(new File(QuizParams.DB_DESTINATION + "/" + q1.qFilename), true);
-
-          } catch (Exception e) {
-            System.err.println(e.getMessage());
-          }
-        }
+        // if (q1.aImages[i] == null) {
+        // try {
+        // Question qFull = buildQuestion(new File(QuizParams.DB_DESTINATION +
+        // "/" + q1.qFilename), true);
+        //
+        // } catch (Exception e) {
+        // System.err.println(e.getMessage());
+        // }
+        // }
         if (qNew.aImages[i] != null && comparatorBW.compareBW(q1.aImages[i], qNew.aImages[i]))
           sameAnswers++;
       }
@@ -328,18 +369,20 @@ public class QuizProcessor {
 
     for (int i = 0; i < questions.size(); i++) {
       Question q1 = questions.get(i);
-      for (int j = 0; j < questions.size(); j++) {
+      for (int j = i + 1; j < questions.size(); j++) {
         if (i != j) {
           Question q2 = questions.get(j);
 
           if (q1.dup || q2.dup)
             continue;
           if (compareAndMerge(q1, q2, true, false)) {
+            System.out.println(q1);
+            System.out.println(q2);
             // ok we have dups, but which one is better
             if (q2.lastModified > q1.lastModified) {
               // q2 is newer
               q1.dup = true;
-              break;
+              // break;
             } else {
               q2.dup = true;
             }
@@ -560,6 +603,26 @@ public class QuizProcessor {
     return possibleQuestions;
   }
 
+  public List<Question> getPossibleQuestions2(List<Question> questions, BufferedImage qImage) {
+    // long start = System.currentTimeMillis();
+    qImage = QuizParams.toBW(qImage);
+    List<Question> possibleQuestions = new ArrayList<>(5);
+    // comparator.setPrecision(60);
+    for (Question q : questions) {
+      // scanner.writeImageTS(QuizParams.toBW(q.qImage), "q1 .png");
+      // scanner.writeImageTS(qImage, "q2 .png");
+      if (scanner.comparator.findImage(qImage, QuizParams.toBW(q.qImage)) != null) {
+        // System.err.println("FOUND: " + q);
+        possibleQuestions.add(q);
+      }
+    }
+    // scanner.writeImageTS(qImage, "qimage.png");
+    // long end = System.currentTimeMillis();
+    // comparator.setPrecision(45);
+    // System.err.println("time: " + (end - start));
+    return possibleQuestions;
+  }
+
   public List<Question> getQuestions() {
     return questions;
   }
@@ -641,6 +704,8 @@ public class QuizProcessor {
   private int processOutputFolder(String path, String outputFolder, boolean checkAnswers) throws IOException,
       AWTException {
     File outputDir = new File(outputFolder);
+    File outputDir2 = new File(outputFolder + "/noanswers");
+    outputDir2.mkdirs();
     // QuizParams.deleteTree(outputDir);
     if (!outputDir.exists())
       outputDir.mkdir();
@@ -657,13 +722,20 @@ public class QuizProcessor {
       List<Question> noDuplicates = getOnlyNewQuestions(newQuestions);
       System.err.println("\nQuestions new to DB: " + noDuplicates.size());
       System.err.println("saving...");
+      int cntNoAnswer = 0;
       for (Question q : noDuplicates) {
-        q.writeImages2(outputDir);
-        questions.add(q);
+        if (q.correctAnswer > 0) {
+          q.writeImages2(outputDir);
+          questions.add(q);
+        } else {
+          q.writeImages2(outputDir2);
+          cntNoAnswer++;
+        }
       }
       System.err.println();
+      System.err.println(cntNoAnswer + " questions without answer saved to " + outputDir2.getAbsolutePath());
       System.err.println("done");
-      return noDuplicates.size();
+      return noDuplicates.size() - cntNoAnswer;
     } else {
       System.err.println("Looking for similar questions and different set of answers...");
       Map<String, List<Question>> map = findSimilarQuestions(questions);
@@ -853,7 +925,7 @@ public class QuizProcessor {
       }// for
 
     }// good q
-    
+
     return q;
   }
 
@@ -911,32 +983,32 @@ public class QuizProcessor {
     BufferedImage aImage = getSubimage(image, aArea, true);
     ImageData a1 = scanner.getImageData(isFromTournament ? "correctAnswer1TT.png" : "correctAnswer1.png");
     BufferedImage a1Image = aImage.getSubimage(0, 0, 20, 20);
-    //MyImageIO.writeImageTS(a1Image, "a1image.png");
-    //MyImageIO.writeImageTS(a1.getImage(), "a1.png");
+    // MyImageIO.writeImageTS(a1Image, "a1image.png");
+    // MyImageIO.writeImageTS(a1.getImage(), "a1.png");
     Pixel c1 = scannerA.comparator.findImage(a1.getImage(), a1Image, Color.red);
     if (c1 != null) {
       aa = 1;
     } else {
       ImageData a2 = scanner.getImageData(isFromTournament ? "correctAnswer2TT.png" : "correctAnswer2.png");
       BufferedImage a2Image = aImage.getSubimage(270, 0, 20, 20);
-      //MyImageIO.writeImageTS(a2Image, "a2image.png");
-      //MyImageIO.writeImageTS(a2.getImage(), "a2.png");
+      // MyImageIO.writeImageTS(a2Image, "a2image.png");
+      // MyImageIO.writeImageTS(a2.getImage(), "a2.png");
       Pixel c2 = scannerA.comparator.findImage(a2.getImage(), a2Image, Color.red);
       if (c2 != null) {
         aa = 2;
       } else {
         ImageData a3 = scanner.getImageData(isFromTournament ? "correctAnswer3TT.png" : "correctAnswer3.png");
         BufferedImage a3Image = aImage.getSubimage(0, 80, 20, 20);
-        //MyImageIO.writeImageTS(a3Image, "a3image.png");
-        //MyImageIO.writeImageTS(a3.getImage(), "a3.png");
+        // MyImageIO.writeImageTS(a3Image, "a3image.png");
+        // MyImageIO.writeImageTS(a3.getImage(), "a3.png");
         Pixel c3 = scannerA.comparator.findImage(a3.getImage(), a3Image, Color.red);
         if (c3 != null) {
           aa = 3;
         } else {
           BufferedImage a4Image = aImage.getSubimage(270, 80, 20, 20);
           ImageData a4 = scanner.getImageData(isFromTournament ? "correctAnswer4TT.png" : "correctAnswer4.png");
-          //MyImageIO.writeImageTS(a4Image, "a4image.png");
-          //MyImageIO.writeImageTS(a4.getImage(), "a4.png");
+          // MyImageIO.writeImageTS(a4Image, "a4image.png");
+          // MyImageIO.writeImageTS(a4.getImage(), "a4.png");
           Pixel c4 = scannerA.comparator.findImage(a4.getImage(), a4Image, Color.red);
           if (c4 != null) {
             aa = 4;
@@ -980,13 +1052,14 @@ public class QuizProcessor {
       // "C:/BACKUP/DBQUIZ/READY/output", true);
 
       quizProcessor.checkDBHealth();
-      quizProcessor.checkDBForDuplicates();
+      // quizProcessor.checkDBForDuplicates();
+      //quizProcessor.analyzeDB();
 
       // quizProcessor.findQuestionByAnswer("C:\\prj\\repos\\TM\\reboundace.png",
       // "C:/BACKUP/DBQuiz/carpetreb");
       // quizProcessor.processSourceFolder();
 
-      //quizProcessor.processSourceFolder("C:/backup/DBQUIZ/mixed");
+      // quizProcessor.processSourceFolder("C:/backup/DBQUIZ/mixed");
       // quizProcessor.processOutputFolder("C:/backup/quizBIG1/output", true);
 
       // quizMaster.processOutputFolder("C:/backup/OUTPUT", true);

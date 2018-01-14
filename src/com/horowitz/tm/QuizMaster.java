@@ -2,6 +2,8 @@ package com.horowitz.tm;
 
 import java.awt.AWTException;
 import java.awt.Color;
+import java.awt.MouseInfo;
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.image.BufferedImage;
@@ -165,9 +167,12 @@ public class QuizMaster {
 
   private boolean auto;
 
+  private boolean clickAnswer = true;
+
   public void play2() throws AWTException, RobotInterruptedException, IOException {
     possibleQuestions = null;
     done = false;
+    clickAnswer = true;
     int cnt = 0;
     Pixel p = clockVisible();
     if (p != null) {
@@ -177,9 +182,12 @@ public class QuizMaster {
       // TODO boolean questionAnswered = false;
       do {
         if (questionVisible()) {
+          long qvisTime = System.currentTimeMillis();
           assert qaImage != null;
           List<Question> newPossibleQuestions = processor.getPossibleQuestions(qaImage);
+          support.firePropertyChange("POSSIBLE_QUESTIONS", null, newPossibleQuestions.size());
           if (newPossibleQuestions.isEmpty()) {
+            // support.firePropertyChange("POSSIBLE_QUESTIONS", null, -1);
             waitForAnswers();
             captureQuestion(qaImage);
             if (auto) {
@@ -197,27 +205,39 @@ public class QuizMaster {
             // waiting for the answer
             possibleQuestions = newPossibleQuestions;
             int answer = sameAnswer(possibleQuestions);
-            waitForAnswers();
+            boolean scanned = false;
             if (answer < 0) {
+              waitForAnswers();
               LOGGER.info("scan answers...");
               long start = System.currentTimeMillis();
               answer = scanAnswers(qaImage);
               LOGGER.info("scan result: " + (System.currentTimeMillis() - start));
+              scanned = true;
             }
             if (answer > 0) {
+              //wait only if it is necessary
+              if (!scanned) {
+                  long howMuch = System.currentTimeMillis() - qvisTime;
+                  howMuch = 450 - howMuch;
+                  if (howMuch > 0) {
+                    mouse.delay((int) howMuch, false);
+                  }
+              }
               clickTheAnswer(answer);
               if (auto) {
                 cnt++;
                 LOGGER.info("q cnt: " + cnt);
               }
               LOGGER.info("waiting 3s ...");
-              mouse.delay(3200, false);
+              checkMouse(2900);
             }
 
           }// possible questions
 
         }// q visible
         else {
+          support.firePropertyChange("POSSIBLE_QUESTIONS", null, -1);
+
           if (settings.getBoolean("tasks.pairs.repeat", false)) {
 
             mouse.delay(200);// chance to interrupt
@@ -246,6 +266,21 @@ public class QuizMaster {
         }
       } while (!done);
 
+    }
+  }
+
+  private void checkMouse(int time) {
+    for (int i = 0; i < time / 100; i++) {
+      try {
+        mouse.delay(time / 100, false);
+        Point currentPos = MouseInfo.getPointerInfo().getLocation();
+        if (currentPos.x <= 10) {
+          clickAnswer = false;
+        } else if (currentPos.y <= 10) {
+          clickAnswer = true;
+        }
+      } catch (RobotInterruptedException e) {
+      }
     }
   }
 
@@ -374,7 +409,10 @@ public class QuizMaster {
       LOGGER.info("A" + answer);
       p.x += qaArea.x;
       p.y += qaArea.y + 140;
-      mouse.click(p);
+      if (clickAnswer)
+        mouse.click(p);
+      else
+        mouse.mouseMove(p);
     }
   }
 

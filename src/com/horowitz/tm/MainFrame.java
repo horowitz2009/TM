@@ -79,7 +79,7 @@ public class MainFrame extends JFrame {
 
   private static final int MIN_SPEED = SIMPLE ? 20 : 0;
 
-  private static String APP_TITLE = "TM v57b12";
+  private static String APP_TITLE = "TM v57b13";
 
   private MouseRobot mouse;
 
@@ -1390,6 +1390,7 @@ public class MainFrame extends JFrame {
     pairsTask = new Task("PRACTICE PAIRS", 1);
     pairsTask.setProtocol(new PairsProtocol());
   }
+
   private void practiceTaskQUIZ() {
     quizTask = new Task("PRACTICE QUIZ", 1);
     quizTask.setProtocol(new QuizProtocol());
@@ -2004,7 +2005,7 @@ public class MainFrame extends JFrame {
     }
 
   }
-  
+
   private final class QuizProtocol extends AbstractGameProtocol {
 
     private boolean done = false;
@@ -2055,7 +2056,7 @@ public class MainFrame extends JFrame {
               if (pq != null) {
                 mouse.click(pq.x, pq.y + 226);
                 mouse.delay(4000);
-                
+
                 if (!doQuiz()) {
                   LOGGER.info("no energy");
                   LOGGER.info("sleep 5min");
@@ -2111,7 +2112,6 @@ public class MainFrame extends JFrame {
 
     }
 
-
     private Pixel quizStarted() throws AWTException, RobotInterruptedException, IOException {
       Pixel p = null;
       boolean started = false;
@@ -2131,8 +2131,7 @@ public class MainFrame extends JFrame {
       return null;
     }
 
-    public boolean doQuiz() throws RobotInterruptedException,
-        IOException, AWTException {
+    public boolean doQuiz() throws RobotInterruptedException, IOException, AWTException {
       boolean can = false;
       do {
         Pixel p = quizStarted();// 18,22 540, 444 170x40
@@ -2960,20 +2959,25 @@ public class MainFrame extends JFrame {
     final JToolBar mainToolbar1 = new JToolBar();
     mainToolbar1.setFloatable(false);
 
-    final JLabel label = new JLabel("           ");
+    final JLabel label = new JLabel("                                      ");
+    label.setOpaque(true);
     mainToolbar1.add(label);
-    // label.setBackground(Color.red);
+    label.setBackground(Color.lightGray);
     quizMaster.addPropertyChangeListener(new PropertyChangeListener() {
 
       @Override
       public void propertyChange(PropertyChangeEvent evt) {
         Integer q = (Integer) evt.getNewValue();
         if (q == 0) {
-          mainToolbar1.setBackground(Color.red);
+          label.setBackground(Color.red);
+        } else if (q == 1) {
+          label.setBackground(Color.green);
+        } else if (q > 1) {
+          label.setBackground(Color.yellow);
         } else {
-          mainToolbar1.setBackground(Color.green);
+          label.setBackground(Color.lightGray);
         }
-        label.setText("" + q);
+        // label.setText("" + q);
       }
     });
 
@@ -3059,7 +3063,7 @@ public class MainFrame extends JFrame {
                 quizMaster.stop();
                 mouse.delay(200, false);
                 quizMaster.play2();
-                
+
               } catch (RobotInterruptedException e) {
                 LOGGER.info("INTERRUPTED");
               } catch (IOException e) {
@@ -3627,7 +3631,7 @@ public class MainFrame extends JFrame {
     if (pairs != _pairsToggle.isSelected()) {
       _pairsToggle.setSelected(pairs);
     }
-    
+
     boolean quiz = "true".equalsIgnoreCase(settings.getProperty("tasks.quiz"));
     if (quiz != _quizToggle.isSelected()) {
       _quizToggle.setSelected(quiz);
