@@ -14,7 +14,9 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import javax.imageio.ImageIO;
@@ -192,14 +194,14 @@ public class QuizMaster {
             captureQuestion(qaImage);
             if (auto) {
               mouse.delay(4800);// will interrup if mouse moved!!!
-              captureAgainInSeparateThread();
+              captureAgainInSeparateThread(5000);
               mouse.delay(200, false);
               clickTheAnswer(1);
               cnt++;
               LOGGER.info("waiting 4s ...");
               mouse.delay(4000, false);
             } else {
-              captureAgainInSeparateThread();
+              captureAgainInSeparateThread(5000);
             }
           } else {
             // waiting for the answer
@@ -213,23 +215,33 @@ public class QuizMaster {
               answer = scanAnswers(qaImage);
               LOGGER.info("scan result: " + (System.currentTimeMillis() - start));
               scanned = true;
+              if (answer <= 0) {
+                //LOGGER.info("hmmmmmmmmmmmmmmmmmmm");
+                captureQuestion(qaImage);
+
+                captureAgainInSeparateThread(12000);
+              }
             }
             if (answer > 0) {
-              //wait only if it is necessary
+              // wait only if it is necessary
               if (!scanned) {
-                  long howMuch = System.currentTimeMillis() - qvisTime;
-                  howMuch = 450 - howMuch;
-                  if (howMuch > 0) {
-                    mouse.delay((int) howMuch, false);
-                  }
+                int slow = settings.getInt("doPairs.slow", 80);
+                
+                long howMuch = System.currentTimeMillis() - qvisTime;
+                howMuch = (400 + slow) - howMuch;
+                if (howMuch > 0) {
+                  mouse.delay((int) howMuch, false);
+                }
               }
               clickTheAnswer(answer);
+              mouse.delay(200, false);
+              captureQuestion(qaArea);
               if (auto) {
                 cnt++;
                 LOGGER.info("q cnt: " + cnt);
               }
               LOGGER.info("waiting 3s ...");
-              checkMouse(2900);
+              checkMouse(2800);
             }
 
           }// possible questions
@@ -284,30 +296,44 @@ public class QuizMaster {
     }
   }
 
-  private void captureAgainInSeparateThread() {
-    Thread t = new Thread(new Runnable() {
-      public void run() {
-        int time = 5000;
-        long start = System.currentTimeMillis();
-        do {
-          try {
-            Thread.sleep(240);
-          } catch (InterruptedException e) {
-            System.err.println("WHAAAAAAAAAAAAAAAAAAAAT");
-          }
-          try {
-            if (questionVisible()) {
-              if (processor.findGreenAnswer(qaImage, isTournamentMode()) > 0)
-                captureQuestion(qaImage);
-            }
-          } catch (IOException | AWTException e) {
-            e.printStackTrace();
-          }
-          // TODO capture in memory and stop when find green
-        } while (System.currentTimeMillis() - start < time);
+  private boolean isRunning(String threadName) {
+    boolean isRunning = false;
+    Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
+    for (Iterator<Thread> it = threadSet.iterator(); it.hasNext();) {
+      Thread thread = it.next();
+      if (thread.getName().equals(threadName)) {
+        isRunning = true;
+        break;
       }
-    });
-    t.start();
+    }
+    return isRunning;
+  }
+
+  private void captureAgainInSeparateThread(final int time) {
+    if (!isRunning("CAPTURE_AGAIN")) {
+      Thread t = new Thread(new Runnable() {
+        public void run() {
+          long start = System.currentTimeMillis();
+          do {
+            try {
+              Thread.sleep(240);
+            } catch (InterruptedException e) {
+              System.err.println("WHAAAAAAAAAAAAAAAAAAAAT");
+            }
+            try {
+              if (questionVisible()) {
+                if (processor.findGreenAnswer(qaImage, isTournamentMode()) > 0)
+                  captureQuestion(qaImage);
+              }
+            } catch (IOException | AWTException e) {
+              e.printStackTrace();
+            }
+            // TODO capture in memory and stop when find green
+          } while (System.currentTimeMillis() - start < time);
+        }
+      }, "CAPTURE_AGAIN");
+      t.start();
+    }
   }
 
   private int scanAnswers(BufferedImage qaImage2) {

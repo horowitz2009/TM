@@ -164,19 +164,23 @@ public class QuizProcessor {
     }
   }
 
-  public void findQuestionByQuestion(String questionFilename) {
+  public void findQuestionByQuestion(String questionFilename, String outputFolder) {
     // comparator.setPrecision(500);
+    File outputDir = new File(outputFolder);
+    outputDir.mkdirs();
     try {
       BufferedImage aa = scanner.getImageData(questionFilename).getImage();
-      // aa = QuizParams.toBW(aa);
+      aa = QuizParams.toBW(aa);
       if (this.questions.isEmpty())
         loadQuestions();
       int k = 0;
       for (Question q : questions) {
-        Pixel pq = scanner.comparator.findImage(aa, q.qImage);
-        if (pq != null)
+        Pixel pq = scanner.comparator.findImage(aa, QuizParams.toBW(q.qImage));
+        if (pq != null) {
           System.err.println(q);
-        // System.err.println("" + k++);
+          q.writeImages2(outputDir);
+        }// System.err.println("" + k++);
+
         Pixel[] ps = new Pixel[4];
       }
       System.err.println("DONE");
@@ -981,7 +985,7 @@ public class QuizProcessor {
   public int findGreenAnswer(BufferedImage image, boolean isFromTournament) throws IOException {
     int aa = 0;
     BufferedImage aImage = getSubimage(image, aArea, true);
-    ImageData a1 = scanner.getImageData(isFromTournament ? "correctAnswer1TT.png" : "correctAnswer1.png");
+    ImageData a1 = scanner.getImageData(isFromTournament ? "correctAnswer1T.png" : "correctAnswer1.png");
     BufferedImage a1Image = aImage.getSubimage(0, 0, 20, 20);
     // MyImageIO.writeImageTS(a1Image, "a1image.png");
     // MyImageIO.writeImageTS(a1.getImage(), "a1.png");
@@ -989,7 +993,7 @@ public class QuizProcessor {
     if (c1 != null) {
       aa = 1;
     } else {
-      ImageData a2 = scanner.getImageData(isFromTournament ? "correctAnswer2TT.png" : "correctAnswer2.png");
+      ImageData a2 = scanner.getImageData(isFromTournament ? "correctAnswer2T.png" : "correctAnswer2.png");
       BufferedImage a2Image = aImage.getSubimage(270, 0, 20, 20);
       // MyImageIO.writeImageTS(a2Image, "a2image.png");
       // MyImageIO.writeImageTS(a2.getImage(), "a2.png");
@@ -997,7 +1001,7 @@ public class QuizProcessor {
       if (c2 != null) {
         aa = 2;
       } else {
-        ImageData a3 = scanner.getImageData(isFromTournament ? "correctAnswer3TT.png" : "correctAnswer3.png");
+        ImageData a3 = scanner.getImageData(isFromTournament ? "correctAnswer3T.png" : "correctAnswer3.png");
         BufferedImage a3Image = aImage.getSubimage(0, 80, 20, 20);
         // MyImageIO.writeImageTS(a3Image, "a3image.png");
         // MyImageIO.writeImageTS(a3.getImage(), "a3.png");
@@ -1006,7 +1010,7 @@ public class QuizProcessor {
           aa = 3;
         } else {
           BufferedImage a4Image = aImage.getSubimage(270, 80, 20, 20);
-          ImageData a4 = scanner.getImageData(isFromTournament ? "correctAnswer4TT.png" : "correctAnswer4.png");
+          ImageData a4 = scanner.getImageData(isFromTournament ? "correctAnswer4T.png" : "correctAnswer4.png");
           // MyImageIO.writeImageTS(a4Image, "a4image.png");
           // MyImageIO.writeImageTS(a4.getImage(), "a4.png");
           Pixel c4 = scannerA.comparator.findImage(a4.getImage(), a4Image, Color.red);
@@ -1051,12 +1055,25 @@ public class QuizProcessor {
       // quizProcessor.processOutputFolder("C:/BACKUP/DBQUIZ/READY",
       // "C:/BACKUP/DBQUIZ/READY/output", true);
 
-      quizProcessor.checkDBHealth();
-      // quizProcessor.checkDBForDuplicates();
-      //quizProcessor.analyzeDB();
+       quizProcessor.checkDBHealth();
 
-      // quizProcessor.findQuestionByAnswer("C:\\prj\\repos\\TM\\reboundace.png",
-      // "C:/BACKUP/DBQuiz/carpetreb");
+      // File tryAgain = new File("C:/BACKUP/DBQuiz/tryagain");
+      // File[] folders = tryAgain.listFiles();
+      // for (File folder : folders) {
+      // try {
+      // quizProcessor.processSourceFolder(folder.getAbsolutePath());
+      // } catch (Exception e) {
+      // // TODO Auto-generated catch block
+      // e.printStackTrace();
+      // }
+      // }
+
+      // quizProcessor.checkDBForDuplicates();
+      // quizProcessor.analyzeDB();
+
+//      quizProcessor.findQuestionByQuestion("C:\\prj\\repos\\TM\\rod.png", "C:/BACKUP/DBQuiz/rod");
+      // quizProcessor.findQuestionByAnswer("C:\\prj\\repos\\TM\\graf.png",
+      // "C:/BACKUP/DBQuiz/graf");
       // quizProcessor.processSourceFolder();
 
       // quizProcessor.processSourceFolder("C:/backup/DBQUIZ/mixed");
