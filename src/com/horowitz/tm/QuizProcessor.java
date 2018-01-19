@@ -21,6 +21,9 @@ import javax.imageio.ImageIO;
 
 import org.apache.commons.io.FileUtils;
 
+import Catalano.Imaging.FastBitmap;
+import Catalano.Imaging.Concurrent.Filters.Threshold;
+
 import com.horowitz.commons.CrazyImageComparator;
 import com.horowitz.commons.DateUtils;
 import com.horowitz.commons.ImageData;
@@ -164,10 +167,14 @@ public class QuizProcessor {
     }
   }
 
+
+  
   public void findQuestionByQuestion(String questionFilename, String outputFolder) {
     // comparator.setPrecision(500);
     File outputDir = new File(outputFolder);
     outputDir.mkdirs();
+    
+    scanner.comparator.setThreshold(0.75);
     try {
       BufferedImage aa = scanner.getImageData(questionFilename).getImage();
       aa = QuizParams.toBW(aa);
@@ -581,7 +588,7 @@ public class QuizProcessor {
     return q;
   }
 
-  public List<Question> getPossibleQuestions(BufferedImage qaImage) {
+  public List<Question> getPossibleQuestions(BufferedImage qaImage, int attempt) {
     long start = System.currentTimeMillis();
     BufferedImage qImage;
     if (isTournamentMode()) {
@@ -589,6 +596,24 @@ public class QuizProcessor {
     } else {
       qImage = qaImage.getSubimage(qArea.x, qArea.y, qArea.width, qArea.height);
     }
+    switch (attempt) {
+    case 1:
+      qImage = qImage.getSubimage(10, 0, qImage.getWidth() - 20, qImage.getHeight());
+      break;
+    case 2:
+      qImage = qImage.getSubimage(20, 0, qImage.getWidth() - 40, qImage.getHeight());
+      break;
+    case 3:
+      qImage = qImage.getSubimage(6, 0, qImage.getWidth() - 12, qImage.getHeight());
+      break;
+    case 4:
+      qImage = qImage.getSubimage(9, 0, qImage.getWidth() - 18, qImage.getHeight());
+      break;
+
+    default:
+      break;
+    }
+    
     qImage = QuizParams.toBW(qImage);
     List<Question> possibleQuestions = new ArrayList<>(5);
     // comparator.setPrecision(60);
@@ -603,6 +628,7 @@ public class QuizProcessor {
     // scanner.writeImageTS(qImage, "qimage.png");
     long end = System.currentTimeMillis();
     // comparator.setPrecision(45);
+    LOGGER.info(possibleQuestions.size() + " ATTEMPT: " + attempt);
     System.err.println("time: " + (end - start));
     return possibleQuestions;
   }
@@ -749,9 +775,9 @@ public class QuizProcessor {
   }
 
   private void resetAreas() throws IOException {
-    qArea = new Rectangle(115, 6, 396, 74);
+    qArea = new Rectangle(115 - 5, 6, 396, 74);
     // qAreaT = new Rectangle(115 + 13, 9, 396, 68);//this works, but
-    qAreaT = new Rectangle(115 + 13, 4, 396, 74);// so this is it!!!
+    qAreaT = new Rectangle(115 - 5 + 13, 4, 396, 74);// so this is it!!!
     aArea = new Rectangle(0, 140, 527, 147);
 
   }
@@ -1022,7 +1048,22 @@ public class QuizProcessor {
     }
     return aa;
   }
-
+  public void testSomething(String filename) {
+    try {
+      BufferedImage s1 = scanner.getImageData(filename).getImage();
+      FastBitmap fb = new FastBitmap(s1);
+      Threshold t = new Threshold(80);
+      fb.toGrayscale();
+      fb.saveAsPNG(filename + "BW.png");
+      t.applyInPlace(fb);
+      fb.saveAsPNG(filename + "TS.png");
+      System.err.println("done");
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    
+  }
   public static void main(String[] args) {
     Settings settings = Settings.createSettings("tm.properties");
 
@@ -1032,6 +1073,9 @@ public class QuizProcessor {
       long start = System.currentTimeMillis();
       QuizProcessor quizProcessor = new QuizProcessor(scanner, settings);
 
+      quizProcessor.testSomething("C:\\prj\\repos\\TM\\sample1.png");
+      quizProcessor.testSomething("C:\\prj\\repos\\TM\\sample2.png");
+      quizProcessor.testSomething("C:\\prj\\repos\\TM\\sample3.png");
       // C:\BACKUP\DBQUIZ\raw 20180101-101135-137\output
 
       // quizProcessor.findQuestionByQuestion("C:/BACKUP/DBQUIZ/raw 20180101-191104-564/output/Q-20180101-191106-653.png");
@@ -1055,7 +1099,7 @@ public class QuizProcessor {
       // quizProcessor.processOutputFolder("C:/BACKUP/DBQUIZ/READY",
       // "C:/BACKUP/DBQUIZ/READY/output", true);
 
-       quizProcessor.checkDBHealth();
+       //quizProcessor.checkDBHealth();
 
       // File tryAgain = new File("C:/BACKUP/DBQuiz/tryagain");
       // File[] folders = tryAgain.listFiles();
@@ -1071,7 +1115,8 @@ public class QuizProcessor {
       // quizProcessor.checkDBForDuplicates();
       // quizProcessor.analyzeDB();
 
-//      quizProcessor.findQuestionByQuestion("C:\\prj\\repos\\TM\\rod.png", "C:/BACKUP/DBQuiz/rod");
+//      quizProcessor.findQuestionByQuestion("C:\\prj\\repos\\TM\\intermission.png", "C:/BACKUP/DBQuiz/intermission");
+      
       // quizProcessor.findQuestionByAnswer("C:\\prj\\repos\\TM\\graf.png",
       // "C:/BACKUP/DBQuiz/graf");
       // quizProcessor.processSourceFolder();

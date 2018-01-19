@@ -186,7 +186,13 @@ public class QuizMaster {
         if (questionVisible()) {
           long qvisTime = System.currentTimeMillis();
           assert qaImage != null;
-          List<Question> newPossibleQuestions = processor.getPossibleQuestions(qaImage);
+          List<Question> newPossibleQuestions = processor.getPossibleQuestions(qaImage, 0);
+//          if (newPossibleQuestions.isEmpty())
+//            newPossibleQuestions = processor.getPossibleQuestions(qaImage, 1);
+//          
+//          if (newPossibleQuestions.isEmpty())
+//            newPossibleQuestions = processor.getPossibleQuestions(qaImage, 2);
+          
           support.firePropertyChange("POSSIBLE_QUESTIONS", null, newPossibleQuestions.size());
           if (newPossibleQuestions.isEmpty()) {
             // support.firePropertyChange("POSSIBLE_QUESTIONS", null, -1);
@@ -216,7 +222,7 @@ public class QuizMaster {
               LOGGER.info("scan result: " + (System.currentTimeMillis() - start));
               scanned = true;
               if (answer <= 0) {
-                //LOGGER.info("hmmmmmmmmmmmmmmmmmmm");
+                // LOGGER.info("hmmmmmmmmmmmmmmmmmmm");
                 captureQuestion(qaImage);
 
                 captureAgainInSeparateThread(12000);
@@ -226,7 +232,7 @@ public class QuizMaster {
               // wait only if it is necessary
               if (!scanned) {
                 int slow = settings.getInt("doPairs.slow", 80);
-                
+
                 long howMuch = System.currentTimeMillis() - qvisTime;
                 howMuch = (400 + slow) - howMuch;
                 if (howMuch > 0) {
@@ -526,10 +532,10 @@ public class QuizMaster {
   }
 
   private void resetAreas(Pixel p) throws IOException {
-    qArea = new Rectangle(p.x + 194, p.y + 154, 527, 91);
+    qArea = new Rectangle(p.x + 194 + 25, p.y + 154, 527, 91);
 
-    aArea = new Rectangle(p.x + 194, p.y + 294, 527, 147);
-    qaArea = new Rectangle(p.x + 194, p.y + 154, 527, 287);
+    aArea = new Rectangle(p.x + 194 + 25, p.y + 294, 527, 147);
+    qaArea = new Rectangle(p.x + 194 + 25, p.y + 154, 527, 287);
 
     qDisplayedArea = new Rectangle(qArea);
     qDisplayedArea.width = 38;
