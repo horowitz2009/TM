@@ -79,7 +79,7 @@ public class MainFrame extends JFrame {
 
   private static final int MIN_SPEED = SIMPLE ? 20 : 0;
 
-  private static String APP_TITLE = "TM v57b13";
+  private static String APP_TITLE = "TM v58";
 
   private MouseRobot mouse;
 
@@ -799,6 +799,11 @@ public class MainFrame extends JFrame {
           myAttrs.a1 *= 1.04;
           myAttrs.a2 *= 1.04;
           myAttrs.a3 *= 1.04;
+          if (myAttrs.a1 < 700) {
+            myAttrs.a1 = settings.getInt("tasks.matches.myAttrs", 730);
+            myAttrs.a2 = settings.getInt("tasks.matches.myAttrs", 730);
+            myAttrs.a3 = settings.getInt("tasks.matches.myAttrs", 730);
+          }
           LOGGER.info("M: " + myAttrs);
 
           int mind = settings.getInt("tasks.matches.minDiff", 40);

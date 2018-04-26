@@ -10,28 +10,29 @@ import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
 import javax.imageio.ImageIO;
 
 import org.apache.commons.io.FileUtils;
-import org.hamcrest.core.IsAnything;
 
-import com.horowitz.commons.CrazyImageComparator;
 import com.horowitz.commons.ImageData;
 import com.horowitz.commons.MouseRobot;
 import com.horowitz.commons.MyImageIO;
 import com.horowitz.commons.Pixel;
 import com.horowitz.commons.RobotInterruptedException;
 import com.horowitz.commons.Settings;
-import com.sun.org.apache.bcel.internal.generic.LSTORE;
 
 public class QuizMaster {
 
@@ -141,9 +142,10 @@ public class QuizMaster {
   private BufferedImage qaImage;
 
   private boolean questionVisible() throws IOException, AWTException {
-    ImageData qID = scanner.getImageData(tournamentMode ? QuizParams.QUESTION_DISPLAYED_TOUR
-        : QuizParams.QUESTION_DISPLAYED);
+    ImageData qID = scanner
+        .getImageData(tournamentMode ? QuizParams.QUESTION_DISPLAYED_TOUR : QuizParams.QUESTION_DISPLAYED);
     qaImage = new Robot().createScreenCapture(qaArea);
+    LOGGER.info("...");
     BufferedImage qaQOnly = qaImage.getSubimage(0, 0, qDisplayedArea.width, qDisplayedArea.height);
 
     Pixel pp = scanner.comparator.findImage(qID.getImage(), qaQOnly, null);
@@ -187,12 +189,12 @@ public class QuizMaster {
           long qvisTime = System.currentTimeMillis();
           assert qaImage != null;
           List<Question> newPossibleQuestions = processor.getPossibleQuestions(qaImage, 0);
-//          if (newPossibleQuestions.isEmpty())
-//            newPossibleQuestions = processor.getPossibleQuestions(qaImage, 1);
-//          
-//          if (newPossibleQuestions.isEmpty())
-//            newPossibleQuestions = processor.getPossibleQuestions(qaImage, 2);
-          
+          // if (newPossibleQuestions.isEmpty())
+          // newPossibleQuestions = processor.getPossibleQuestions(qaImage, 1);
+          //
+          // if (newPossibleQuestions.isEmpty())
+          // newPossibleQuestions = processor.getPossibleQuestions(qaImage, 2);
+
           support.firePropertyChange("POSSIBLE_QUESTIONS", null, newPossibleQuestions.size());
           if (newPossibleQuestions.isEmpty()) {
             // support.firePropertyChange("POSSIBLE_QUESTIONS", null, -1);
@@ -212,21 +214,27 @@ public class QuizMaster {
           } else {
             // waiting for the answer
             possibleQuestions = newPossibleQuestions;
-            int answer = sameAnswer(possibleQuestions);
+            int answer = -1;// sameAnswer(possibleQuestions);
             boolean scanned = false;
             if (answer < 0) {
               waitForAnswers();
-              LOGGER.info("scan answers...");
+              // LOGGER.info("scan answers...");
               long start = System.currentTimeMillis();
               answer = scanAnswers(qaImage);
-              LOGGER.info("scan result: " + (System.currentTimeMillis() - start));
               scanned = true;
-              if (answer <= 0) {
-                // LOGGER.info("hmmmmmmmmmmmmmmmmmmm");
+              if (answer == 0) {
+                // scan again motherfucker
+                answer = scanAnswers2(qaImage);
+
+              }
+              LOGGER.info("scan result: " + (System.currentTimeMillis() - start));
+              if (answer < 0) {
+                LOGGER.info("hmmmmmmmmmmmmmmmmmmm");
                 captureQuestion(qaImage);
 
                 captureAgainInSeparateThread(12000);
               }
+
             }
             if (answer > 0) {
               // wait only if it is necessary
@@ -241,18 +249,22 @@ public class QuizMaster {
               }
               clickTheAnswer(answer);
               mouse.delay(200, false);
+              possibleQuestions = null;
               captureQuestion(qaArea);
               if (auto) {
                 cnt++;
                 LOGGER.info("q cnt: " + cnt);
               }
               LOGGER.info("waiting 3s ...");
-              checkMouse(2800);
+              // long start = System.currentTimeMillis();
+
+              checkMouse(3000);
+              // LOGGER.info("waited: " + (System.currentTimeMillis() - start));
             }
 
-          }// possible questions
+          } // possible questions
 
-        }// q visible
+        } // q visible
         else {
           support.firePropertyChange("POSSIBLE_QUESTIONS", null, -1);
 
@@ -290,7 +302,7 @@ public class QuizMaster {
   private void checkMouse(int time) {
     for (int i = 0; i < time / 100; i++) {
       try {
-        mouse.delay(time / 100, false);
+        mouse.delay(100, false);
         Point currentPos = MouseInfo.getPointerInfo().getLocation();
         if (currentPos.x <= 10) {
           clickAnswer = false;
@@ -342,14 +354,37 @@ public class QuizMaster {
     }
   }
 
-  private int scanAnswers(BufferedImage qaImage2) {
-    for (Question q : possibleQuestions) {
-      // LOGGER.info("Checking answer " + q);
-      int answer = checkQuestion(qaImage, q);
-      if (answer > 0)
-        return answer;
+  private int scanAnswers2(BufferedImage qaImage2) {
+    if (possibleQuestions != null) {
+      Map<Double, Integer> mapAll = new Hashtable<>();
+      for (Question q : possibleQuestions) {
+        LOGGER.info("Checking answer " + q);
+        Map<Double, Integer> map = scanAnswers(qaImage, q);
+        mapAll.putAll(map);
+      }
+
+      double best = 0.0;
+      for (Double v : mapAll.keySet()) {
+        if (v > best)
+          best = v;
+      }
+      LOGGER.info("BEST: " + best + "   A" + mapAll.get(best));
+      return mapAll.get(best);
+    } else {
+      return 0;
     }
-    return -1;
+  }
+
+  private int scanAnswers(BufferedImage qaImage2) {
+    if (possibleQuestions != null) {
+      for (Question q : possibleQuestions) {
+        // LOGGER.info("Checking answer " + q);
+        int answer = checkQuestion(qaImage, q);
+        if (answer > 0)
+          return answer;
+      }
+    }
+    return 0;
   }
 
   private BufferedImage getSubimage(BufferedImage image, Rectangle area, boolean remaining) {
@@ -364,6 +399,53 @@ public class QuizMaster {
         return getSubimage(image, area, true);
     }
     return image;
+  }
+
+  private static NumberFormat DOUBLEFORMATTER = new DecimalFormat("#0.0000");
+
+  private Map<Double, Integer> scanAnswers(BufferedImage qaImage2, Question q) {
+    LOGGER.info("OKOKOKOK");
+    Map<Double, Integer> map = new Hashtable<>();
+    // not found obviously. try again looking for best match
+    double originalThreshold = processor.comparatorBW.getThreshold();
+    processor.comparatorBW.setThreshold(0.87);
+    List<Double> res = new ArrayList<>();
+
+    BufferedImage aImage = getSubimage(qaImage2, new Rectangle(0, 140, 527, 147), true);
+    aImage = QuizParams.toBW(aImage);
+
+    boolean debug = false;
+
+    BufferedImage correctImage = q.getCorrectImage();
+    if (debug)
+      scanner.writeImageTS(aImage, "aimage now.png");
+    if (correctImage != null) {
+      correctImage = QuizParams.toBW(correctImage);
+      if (debug)
+        scanner.writeImageTS(correctImage, "correctImage.png");
+
+      int[] xoff = new int[] { 0, 270, 0, 270 };
+      int[] yoff = new int[] { 0, 0, 80, 80 };
+      int xPad = 13 + 2;
+      int yPad = 10 + 2;
+
+      for (int i = 0; i < 4; i++) {
+        Rectangle area = new Rectangle(xoff[i] + xPad, yoff[i] + yPad, 257 - 2 * xPad, 67 - 2 * yPad);
+        BufferedImage aiImage = getSubimage(aImage, area, false);
+
+        Double v = processor.comparatorBW.evalImageBW(aiImage, correctImage);
+        map.put(v, i + 1);
+        res.add(v);
+      }
+
+      processor.comparatorBW.setThreshold(originalThreshold);
+      String msg = "";
+      for (Double v : res) {
+        msg += DOUBLEFORMATTER.format(v) + " ";
+      }
+      LOGGER.info(msg);
+    }
+    return map;
   }
 
   private int checkQuestion(BufferedImage qaImage2, Question q) {
@@ -480,8 +562,8 @@ public class QuizMaster {
           do {
             t++;
             Thread.sleep(30);
-            ImageData qID = scanner.getImageData(tournamentMode ? QuizParams.QUESTION_DISPLAYED_TOUR
-                : QuizParams.QUESTION_DISPLAYED);
+            ImageData qID = scanner
+                .getImageData(tournamentMode ? QuizParams.QUESTION_DISPLAYED_TOUR : QuizParams.QUESTION_DISPLAYED);
 
             BufferedImage qaImage = new Robot().createScreenCapture(qaArea);
             BufferedImage qaQOnly = qaImage.getSubimage(0, 0, qDisplayedArea.width, qDisplayedArea.height);
@@ -496,8 +578,8 @@ public class QuizMaster {
 
             Pixel pp2 = null;
             if (waitForAnswer && pp != null) {
-              ImageData aID = processor.scannerInt.getImageData(tournamentMode ? "clearAnswer1T.png"
-                  : "clearAnswer1.png");
+              ImageData aID = processor.scannerInt
+                  .getImageData(tournamentMode ? "clearAnswer1T.png" : "clearAnswer1.png");
 
               pp2 = processor.scannerInt.comparator.findImage(aID.getImage(), a1Only, Color.red);
               // pp2 = scannerInt.findImage("clearAnswer1.png", aDisplayedArea);
@@ -521,7 +603,7 @@ public class QuizMaster {
             if (t >= 10) {
               LOGGER.info((pp != null ? "--q--" : "-----") + (pp2 != null ? "--a--" : "-----"));
               t = 0;
-              // LOGGER.info("q: " + pp + "   a: " + pp2);
+              // LOGGER.info("q: " + pp + " a: " + pp2);
             }
           } while (!stopQuestionThread);
         } catch (Exception e) {

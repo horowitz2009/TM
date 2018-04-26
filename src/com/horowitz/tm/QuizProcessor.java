@@ -83,7 +83,7 @@ public class QuizProcessor {
 
     comparatorBW = new CrazyImageComparator();
     comparatorBW.setBW(true);
-    comparatorBW.setThreshold(0.99);
+    comparatorBW.setThreshold(0.998);
 
     matcher = new TemplateMatcher();
 
@@ -217,6 +217,7 @@ public class QuizProcessor {
         Pixel[] ps = new Pixel[4];
         for (int j = 0; j < ps.length; j++) {
           // ps[j] = matcher.findMatchQBW(aa, q.aImages[j], null);
+          if (q.aImages[j] != null)
           ps[j] = comparatorBW.findImage(aa, q.aImages[j]);
           if (ps[j] != null) {
             System.err.println(q);
@@ -589,7 +590,7 @@ public class QuizProcessor {
   }
 
   public List<Question> getPossibleQuestions(BufferedImage qaImage, int attempt) {
-    long start = System.currentTimeMillis();
+    //long start = System.currentTimeMillis();
     BufferedImage qImage;
     if (isTournamentMode()) {
       qImage = qaImage.getSubimage(qAreaT.x, qAreaT.y, qAreaT.width, qAreaT.height);
@@ -626,10 +627,10 @@ public class QuizProcessor {
       }
     }
     // scanner.writeImageTS(qImage, "qimage.png");
-    long end = System.currentTimeMillis();
+    //long end = System.currentTimeMillis();
     // comparator.setPrecision(45);
-    LOGGER.info(possibleQuestions.size() + " ATTEMPT: " + attempt);
-    System.err.println("time: " + (end - start));
+    //LOGGER.info(possibleQuestions.size() + " ATTEMPT: " + attempt);
+    //System.err.println("time: " + (end - start));
     return possibleQuestions;
   }
 
@@ -1073,9 +1074,9 @@ public class QuizProcessor {
       long start = System.currentTimeMillis();
       QuizProcessor quizProcessor = new QuizProcessor(scanner, settings);
 
-      quizProcessor.testSomething("C:\\prj\\repos\\TM\\sample1.png");
-      quizProcessor.testSomething("C:\\prj\\repos\\TM\\sample2.png");
-      quizProcessor.testSomething("C:\\prj\\repos\\TM\\sample3.png");
+      //quizProcessor.testSomething("C:\\prj\\repos\\TM\\sample1.png");
+      //quizProcessor.testSomething("C:\\prj\\repos\\TM\\sample2.png");
+      //quizProcessor.testSomething("C:\\prj\\repos\\TM\\sample3.png");
       // C:\BACKUP\DBQUIZ\raw 20180101-101135-137\output
 
       // quizProcessor.findQuestionByQuestion("C:/BACKUP/DBQUIZ/raw 20180101-191104-564/output/Q-20180101-191106-653.png");
@@ -1099,7 +1100,7 @@ public class QuizProcessor {
       // quizProcessor.processOutputFolder("C:/BACKUP/DBQUIZ/READY",
       // "C:/BACKUP/DBQUIZ/READY/output", true);
 
-       //quizProcessor.checkDBHealth();
+      quizProcessor.checkDBHealth();
 
       // File tryAgain = new File("C:/BACKUP/DBQuiz/tryagain");
       // File[] folders = tryAgain.listFiles();
@@ -1112,13 +1113,13 @@ public class QuizProcessor {
       // }
       // }
 
-      // quizProcessor.checkDBForDuplicates();
+       //quizProcessor.checkDBForDuplicates();
       // quizProcessor.analyzeDB();
 
-//      quizProcessor.findQuestionByQuestion("C:\\prj\\repos\\TM\\intermission.png", "C:/BACKUP/DBQuiz/intermission");
+     //quizProcessor.findQuestionByQuestion("C:\\prj\\repos\\TM\\art.png", "C:/BACKUP/DBQuiz/art");
       
-      // quizProcessor.findQuestionByAnswer("C:\\prj\\repos\\TM\\graf.png",
-      // "C:/BACKUP/DBQuiz/graf");
+//       quizProcessor.findQuestionByAnswer("C:\\prj\\repos\\TM\\art.png",
+//       "C:/BACKUP/DBQuiz/martina");
       // quizProcessor.processSourceFolder();
 
       // quizProcessor.processSourceFolder("C:/backup/DBQUIZ/mixed");
